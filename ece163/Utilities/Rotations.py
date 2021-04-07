@@ -21,7 +21,10 @@ def dcm2euler(dcm):
     - use the defined formulas of yaw, pitch, and roll
     - assigned the correct
     """
-    if dcm[0][2]
+    if (dcm[0][2] >1):
+        dcm = 1
+    if (dcm[0][2] < -1):
+        dcm = -1
     pitch = -math.asin(dcm[0][2])
     yaw = math.atan2(dcm[1][2],dcm[2][2])
     roll = math.atan2(dcm[1][2],dcm[2][2])
