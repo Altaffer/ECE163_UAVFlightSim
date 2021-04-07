@@ -5,7 +5,7 @@ arbitrary size for good rendering in the display window.
 """
 
 from ..Utilities import MatrixMath as mm
-from ..Utilities import Rotations
+from ..Utilities import Rotations as r
 from ..Constants import VehiclePhysicalConstants as VPC
 
 baseUnit = 1.0
@@ -134,5 +134,8 @@ class VehicleGeometry():
 		newPoints = self.vertices
 		
 		#student code goes here
-
+		newPoints = matrixTranspose(r.euler2DCM(yaw, pitch, roll))
+		newPointsInertial = matrixMultiply(newPoints, self.vertices)
+		newPointsEnu = r.ned2enu(newPointsInertial)
+		newPoints = matrixOffset(newPointsEnu,y,x,-z)
 		return newPoints
