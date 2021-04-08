@@ -2,9 +2,10 @@
 small widget to control calculating Trim. It holds an instance of the vehicleTrim module and provides convenient access to it.
 """
 
-import PyQt5.QtCore as QtCore
-import PyQt5.QtWidgets as QtWidgets
-
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+import ece163.Containers.Inputs as Inputs
 import ece163.Constants.VehiclePhysicalConstants as VehiclePhysicalConstants
 from . import doubleInputWithLabel
 from ..Controls import VehicleTrim
@@ -19,8 +20,8 @@ defaultTrimParameters = [('Airspeed', VehiclePhysicalConstants.InitialSpeed), ('
 defaultTrimFileName = 'VehicleTrim_Data.pickle'
 
 
-class vehicleTrimWidget(QtWidgets.QWidget):
-	trimSignal = QtCore.pyqtSignal(tuple)
+class vehicleTrimWidget(QWidget):
+	trimSignal = pyqtSignal(tuple)
 	def __init__(self, guiControls, callBackOnSuccesfulTrim=None, parent=None):
 		"""
 		widget to calculate trim within a gui
@@ -29,7 +30,7 @@ class vehicleTrimWidget(QtWidgets.QWidget):
 		:param callBackOnSuccesfulTrim: called if trim was succesful with arguments of the trim parameters
 		"""
 		super().__init__(parent)
-		self.usedLayout = QtWidgets.QVBoxLayout()
+		self.usedLayout = QVBoxLayout()
 		self.setLayout(self.usedLayout)
 		self.guiControls = guiControls
 		self.callBack = callBackOnSuccesfulTrim
@@ -42,7 +43,7 @@ class vehicleTrimWidget(QtWidgets.QWidget):
 		except FileNotFoundError:
 			self.currentTrimState = self.trimInstance.getTrimState()
 			self.currentTrimControls = self.trimInstance.getTrimControls()
-		valueInputsBox = QtWidgets.QHBoxLayout()
+		valueInputsBox = QHBoxLayout()
 		self.usedLayout.addLayout(valueInputsBox)
 
 		self.trimInputsDict = dict()
@@ -51,31 +52,31 @@ class vehicleTrimWidget(QtWidgets.QWidget):
 			valueInputsBox.addWidget(newControl)
 			self.trimInputsDict[name] = newControl
 
-		trimControlsBox = QtWidgets.QHBoxLayout()
+		trimControlsBox = QHBoxLayout()
 		self.usedLayout.addLayout(trimControlsBox)
-		self.setStraightandFlatButton = QtWidgets.QPushButton('Set Straight and Level')
+		self.setStraightandFlatButton = QPushButton('Set Straight and Level')
 		trimControlsBox.addWidget(self.setStraightandFlatButton)
 		self.setStraightandFlatButton.clicked.connect(self.straightAndLevelResponse)
 
-		self.calcTrimButton = QtWidgets.QPushButton("Calculate Trim")
+		self.calcTrimButton = QPushButton("Calculate Trim")
 		self.calcTrimButton.clicked.connect(self.trimButtonResponse)
 		trimControlsBox.addWidget(self.calcTrimButton)
-		self.saveTrimButton = QtWidgets.QPushButton("Save Trim")
+		self.saveTrimButton = QPushButton("Save Trim")
 		self.saveTrimButton.clicked.connect(self.saveTrimResponse)
 		trimControlsBox.addWidget(self.saveTrimButton)
 
-		self.trimStatus = QtWidgets.QLabel("No Trim Calculated")
+		self.trimStatus = QLabel("No Trim Calculated")
 		trimControlsBox.addWidget(self.trimStatus)
 		trimControlsBox.addStretch()
 
 		self.trimSignal.connect(self.trimCalculated)
 
-		self.curInputGrid = QtWidgets.QGridLayout()
+		self.curInputGrid = QGridLayout()
 		self.usedLayout.addLayout(self.curInputGrid)
 
 		self.curInputGridDict = dict()
 		for i, name in enumerate([ 'Throttle', 'Aileron', 'Elevator', 'Rudder']):
-			newLabel = QtWidgets.QLabel("{}: ".format(name))
+			newLabel = QLabel("{}: ".format(name))
 			self.curInputGrid.addWidget(newLabel, 0, i)
 			self.curInputGridDict[name] = newLabel
 		self.updateCurInputGrid(self.currentTrimControls)

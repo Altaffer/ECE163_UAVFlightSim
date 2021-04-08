@@ -290,13 +290,13 @@ class VehicleTrim():
 
 		p0 = points[0]
 
-		points = MatrixMath.offset(points, self.VehicleTrimModel.vehicleDynamics.state.pn - p0[0],
+		points = MatrixMath.matrixOffset(points, self.VehicleTrimModel.vehicleDynamics.state.pn - p0[0],
 										 self.VehicleTrimModel.vehicleDynamics.state.pe - p0[1],
 										 self.VehicleTrimModel.vehicleDynamics.state.pd - p0[2])
 		cos_psi = math.cos(self.VehicleTrimModel.vehicleDynamics.state.yaw)
 		sin_psi = math.sin(self.VehicleTrimModel.vehicleDynamics.state.yaw)
 		R_psi = [[cos_psi, sin_psi, 0],[-sin_psi, cos_psi, 0],[0, 0, 1]]
-		points = MatrixMath.multiply(points,R_psi)
+		points = MatrixMath.matrixMultiply(points,R_psi)
 		points = Rotations.ned2enu(points)
 		return points
 
@@ -377,7 +377,7 @@ class VehicleTrim():
 		errorState.r = state.r - self.VehicleTrimModel.vehicleDynamics.state.r
 		errorState.alpha = state.alpha - self.VehicleTrimModel.vehicleDynamics.state.alpha
 		errorState.beta = state.beta - self.VehicleTrimModel.vehicleDynamics.state.beta
-		errorState.R = MatrixMath.subtract(state.R, self.VehicleTrimModel.vehicleDynamics.state.R)
+		errorState.R = MatrixMath.matrixSubtract(state.R, self.VehicleTrimModel.vehicleDynamics.state.R)
 
 		return errorState
 

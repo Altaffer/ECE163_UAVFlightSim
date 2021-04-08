@@ -2,12 +2,14 @@
 small widget to control wind settings presets taken from VehiclePhysicalConstants
 """
 
-import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 import ece163.Constants.VehiclePhysicalConstants as VehiclePhysicalConstants
 
 widgetName = "Wind Control"
 
-class WindControl(QtWidgets.QWidget):
+class WindControl(QWidget):
 	def __init__(self, aeroInstance, parent=None):
 		"""
 		generates a wind control widget using the lists in phsyical parameters. Needs a simulate instance so it can set them.
@@ -19,24 +21,24 @@ class WindControl(QtWidgets.QWidget):
 
 		self.aeroInstance = aeroInstance
 
-		usedLayout = QtWidgets.QVBoxLayout()
+		usedLayout = QVBoxLayout()
 		self.setLayout(usedLayout)
 
-		steadyWindwsColumn = QtWidgets.QVBoxLayout()
-		gustWindwsColumn = QtWidgets.QVBoxLayout()
+		steadyWindwsColumn = QVBoxLayout()
+		gustWindwsColumn = QVBoxLayout()
 
-		windSelectionBox = QtWidgets.QHBoxLayout()
+		windSelectionBox = QHBoxLayout()
 		usedLayout.addLayout(windSelectionBox)
 		windSelectionBox.addLayout(steadyWindwsColumn)
 		windSelectionBox.addLayout(gustWindwsColumn)
 
-		steadyWindwsColumn.addWidget(QtWidgets.QLabel("Steady Windws"))
-		gustWindwsColumn.addWidget(QtWidgets.QLabel("Gust Winds"))
+		steadyWindwsColumn.addWidget(QLabel("Steady Windws"))
+		gustWindwsColumn.addWidget(QLabel("Gust Winds"))
 
 		self.steadyWinds = list()
-		self.steadyButtonsGroup = QtWidgets.QButtonGroup()
+		self.steadyButtonsGroup = QButtonGroup()
 		for index, (name, value) in enumerate(VehiclePhysicalConstants.SteadyWinds):
-			newRadio = QtWidgets.QRadioButton(name)
+			newRadio = QRadioButton(name)
 			self.steadyWinds.append(value)
 			steadyWindwsColumn.addWidget(newRadio)
 			self.steadyButtonsGroup.addButton(newRadio, index)
@@ -45,16 +47,16 @@ class WindControl(QtWidgets.QWidget):
 		# print(self.steadyButtonsGroup.checkedId())
 
 		self.gustWinds = list()
-		self.gustButtonsGroup = QtWidgets.QButtonGroup()
+		self.gustButtonsGroup = QButtonGroup()
 		for index, (name, value) in enumerate(VehiclePhysicalConstants.GustWinds):
-			newRadio = QtWidgets.QRadioButton(name)
+			newRadio = QRadioButton(name)
 			self.gustWinds.append(value)
 			gustWindwsColumn.addWidget(newRadio)
 			self.gustButtonsGroup.addButton(newRadio, index)
 
 		self.gustButtonsGroup.button(0).setChecked(True)
 
-		applyWindsButton = QtWidgets.QPushButton("Apply Winds")
+		applyWindsButton = QPushButton("Apply Winds")
 		applyWindsButton.clicked.connect(self.applyWindsResponse)
 		usedLayout.addWidget(applyWindsButton)
 

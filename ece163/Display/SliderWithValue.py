@@ -1,10 +1,13 @@
 """
 Simple convenience widget allowing for a slider with arbitrary range and an attached value display.
 """
-import PyQt5.QtCore as QtCore
-import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
-class SliderWithValue(QtWidgets.QWidget):
+import sys
+
+class SliderWithValue(QWidget):
 	internalMaxValue = 1000
 	internalMinValue = 0
 	def __init__(self, name, minValue=0, maxValue=100, startValue= 0, onChangePointer=None, parent=None):
@@ -31,17 +34,17 @@ class SliderWithValue(QtWidgets.QWidget):
 		self.ratio = (self.max-self.min)/(self.internalMaxValue-self.internalMinValue)
 		# print(self.ratio)
 
-		self.usedLayout = QtWidgets.QHBoxLayout()
+		self.usedLayout = QHBoxLayout()
 		self.setLayout(self.usedLayout)
-		self.usedLayout.addWidget(QtWidgets.QLabel("{}".format(name)))
-		self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+		self.usedLayout.addWidget(QLabel("{}".format(name)))
+		self.slider = QSlider(Qt.Horizontal)
 		self.slider.setMinimum(self.internalMinValue)
 		self.slider.setMaximum(self.internalMaxValue)
 		self.slider.valueChanged.connect(self.updateValue)
 
 		self.usedLayout.addWidget(self.slider)
 
-		self.valueText = QtWidgets.QLabel()
+		self.valueText = QLabel()
 		self.usedLayout.addWidget(self.valueText)
 
 		self.usedLayout.addStretch()

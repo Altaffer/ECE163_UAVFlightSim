@@ -1,50 +1,49 @@
 import datetime
 import os
 import sys
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
-import PyQt5.QtCore as QtCore
-import PyQt5.QtGui as QtGui
-import PyQt5.QtWidgets as QtWidgets
-
-class DataExport(QtWidgets.QWidget):
+class DataExport(QWidget):
 	def __init__(self, simulateHandle, filePrefix='', parent=None):
 		super().__init__()
 		self.simulateHandle = simulateHandle
 		self.filePrefix = filePrefix
-		self.usedLayout = QtWidgets.QVBoxLayout()
+		self.usedLayout = QVBoxLayout()
 		self.setLayout(self.usedLayout)
 
-		pickleBox = QtWidgets.QHBoxLayout()
+		pickleBox = QHBoxLayout()
 		self.usedLayout.addLayout(pickleBox)
-		pickleBox.addWidget(QtWidgets.QLabel('Pickle'))
-		self.picklePath = QtWidgets.QLineEdit()
+		pickleBox.addWidget(QLabel('Pickle'))
+		self.picklePath = QLineEdit()
 
 		pickleBox.addWidget(self.picklePath)
-		pickleBrowseButton = QtWidgets.QPushButton('Browse')
+		pickleBrowseButton = QPushButton('Browse')
 		pickleBrowseButton.clicked.connect(self.choosePicklePath)
 		pickleBox.addWidget(pickleBrowseButton)
-		pickleRefreshButton = QtWidgets.QPushButton('Refresh')
+		pickleRefreshButton = QPushButton('Refresh')
 		pickleBox.addWidget(pickleRefreshButton)
 		pickleRefreshButton.clicked.connect(self.updatePicklePath)
 		self.updatePicklePath()
-		pickleSaveButton = QtWidgets.QPushButton('Save')
+		pickleSaveButton = QPushButton('Save')
 		pickleBox.addWidget(pickleSaveButton)
 		pickleSaveButton.clicked.connect(self.savePickleFile)
 		pickleBox.addStretch()
 
-		csvBox = QtWidgets.QHBoxLayout()
+		csvBox = QHBoxLayout()
 		self.usedLayout.addLayout(csvBox)
-		csvBox.addWidget(QtWidgets.QLabel('CSV  '))
-		self.csvPath = QtWidgets.QLineEdit()
+		csvBox.addWidget(QLabel('CSV  '))
+		self.csvPath = QLineEdit()
 		csvBox.addWidget(self.csvPath)
-		csvBrowseButton = QtWidgets.QPushButton('Browse')
+		csvBrowseButton = QPushButton('Browse')
 		csvBrowseButton.clicked.connect(self.chooseCSVPath)
 		csvBox.addWidget(csvBrowseButton)
-		csvRefreshButton = QtWidgets.QPushButton('Refresh')
+		csvRefreshButton = QPushButton('Refresh')
 		csvRefreshButton.clicked.connect(self.updateCSVPath)
 		self.updateCSVPath()
 		csvBox.addWidget(csvRefreshButton)
-		csvSaveButton = QtWidgets.QPushButton('Save')
+		csvSaveButton = QPushButton('Save')
 		csvBox.addWidget(csvSaveButton)
 		csvSaveButton.clicked.connect(self.saveCSVFile)
 		csvBox.addStretch()
@@ -88,9 +87,9 @@ class DataExport(QtWidgets.QWidget):
 		self.csvPath.setText(filePath)
 
 	def choosePicklePath(self):
-		fileSelect = QtWidgets.QFileDialog(filter='*.pickle')
-		fileSelect.setFileMode(QtWidgets.QFileDialog.AnyFile)
-		fileSelect.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+		fileSelect = QFileDialog(filter='*.pickle')
+		fileSelect.setFileMode(QFileDialog.AnyFile)
+		fileSelect.setAcceptMode(QFileDialog.AcceptSave)
 		folder, file = os.path.split(self.picklePath.text())
 		fileSelect.setDirectory(folder)
 		fileSelect.selectFile(self.generateFileName('.pickle'))
@@ -99,9 +98,9 @@ class DataExport(QtWidgets.QWidget):
 		return
 
 	def chooseCSVPath(self):
-		fileSelect = QtWidgets.QFileDialog(filter='*.csv')
-		fileSelect.setFileMode(QtWidgets.QFileDialog.AnyFile)
-		fileSelect.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+		fileSelect = QFileDialog(filter='*.csv')
+		fileSelect.setFileMode(QFileDialog.AnyFile)
+		fileSelect.setAcceptMode(QFileDialog.AcceptSave)
 		folder, file = os.path.split(self.csvPath.text())
 		fileSelect.setDirectory(folder)
 		fileSelect.selectFile(self.generateFileName('.csv'))

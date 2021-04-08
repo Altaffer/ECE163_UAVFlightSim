@@ -1,8 +1,9 @@
 """
 This module handles displaying the vehicle in an OpenGL window for easy visualization
 """
-import PyQt5.QtCore as QtCore
-import PyQt5.QtWidgets as QtWidgets
+import PyQt5
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
 import pyqtgraph.opengl
 import pyqtgraph
 from ..Modeling import VehicleGeometry
@@ -19,15 +20,15 @@ metersToPixelRatio = 1
 
 testLine = [[2, 2, 2], [2, 0, 100], [-2, 0, 100]]
 
-class vehicleDisplay(QtWidgets.QWidget):
-	updateVehiclePositionSignal = QtCore.pyqtSignal(list)
+class vehicleDisplay(QWidget):
+	updateVehiclePositionSignal = pyqtSignal(list)
 	def __init__(self, parent=None):
 		"""
 		sets up the full window with the plane along with a row of camera controls
 		"""
 		super().__init__(parent)
 
-		self.usedLayout = QtWidgets.QVBoxLayout()
+		self.usedLayout = QVBoxLayout()
 		self.setLayout(self.usedLayout)
 		self.trackPlane = True
 		self.leavePlaneTrail = True
@@ -98,25 +99,25 @@ class vehicleDisplay(QtWidgets.QWidget):
 		# self.clearAribtraryLine()
 		# we add another hbox for camera controls
 
-		cameraControlBox = QtWidgets.QHBoxLayout()
+		cameraControlBox = QHBoxLayout()
 		self.usedLayout.addLayout(cameraControlBox)
 
-		zoomInButton = QtWidgets.QPushButton("Zoom In")
+		zoomInButton = QPushButton("Zoom In")
 		zoomInButton.clicked.connect(self.ZoomIn)
-		zoomOutButton = QtWidgets.QPushButton("Zoom Out")
+		zoomOutButton = QPushButton("Zoom Out")
 		zoomOutButton.clicked.connect(self.ZoomOut)
 		cameraControlBox.addWidget(zoomInButton)
 		cameraControlBox.addWidget(zoomOutButton)
 
-		self.trackButton = QtWidgets.QPushButton("Track")
+		self.trackButton = QPushButton("Track")
 		self.trackButton.clicked.connect(self.TrackButtonResponse)
 		cameraControlBox.addWidget(self.trackButton)
 
-		self.manualButton = QtWidgets.QPushButton("Manual")
+		self.manualButton = QPushButton("Manual")
 		self.manualButton.clicked.connect(self.ManualButtonResponse)
 		cameraControlBox.addWidget(self.manualButton)
 
-		self.resetCameraButton = QtWidgets.QPushButton("Reset")
+		self.resetCameraButton = QPushButton("Reset")
 		self.resetCameraButton.clicked.connect(self.resetCameraView)
 		cameraControlBox.addWidget(self.resetCameraButton)
 
@@ -135,7 +136,7 @@ class vehicleDisplay(QtWidgets.QWidget):
 		"""
 		Tells Qt preferred size for widget
 		"""
-		return QtCore.QSize(720, 480)
+		return QSize(720, 480)
 
 	def updateVehiclePosition(self, newState):
 		"""

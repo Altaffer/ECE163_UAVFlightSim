@@ -2,19 +2,21 @@
 widget which handles the creation of linear models and determining the gains
 """
 
-import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 from .SliderWithValue import SliderWithValue
 from ..Constants import VehiclePhysicalConstants
 from ..Containers.Controls import referenceCommands
 import math
 
 # Airspeed, Altitude, Course
-class ReferenceControlWidget(QtWidgets.QWidget):
+class ReferenceControlWidget(QWidget):
 	def __init__(self, callBackOnChange=None, parent=None):
 		super().__init__()
 
 		self.callBack = callBackOnChange
-		self.usedLayout = QtWidgets.QVBoxLayout()
+		self.usedLayout = QVBoxLayout()
 		self.setLayout(self.usedLayout)
 		self.currentReference = referenceCommands()
 

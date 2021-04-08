@@ -1,8 +1,7 @@
 """Matrix Library in Native Python, using lists of lists as a row-major representation of matrices.
    That is: [[1,2,3],[4,5,6]] is a 2x3 matrix and they are indexed from [0]. Thus A[1][2] is 6, and A[0][1] is 2."""
-import math
 
-def multiply(A,B):
+def matrixMultiply(A,B):
     """
     Simple Matrix multiplication, raises arithmetic error if inner dimensions don't match
 
@@ -15,7 +14,7 @@ def multiply(A,B):
     result = [[sum(a * b for a, b in zip(A_row, B_col)) for B_col in zip(*B)] for A_row in A]
     return result
 
-def transpose(A):
+def matrixTranspose(A):
     """
     Matrix transpose, swaps rows and columns
 
@@ -25,7 +24,7 @@ def transpose(A):
     result = [[A[j][i] for j in range(len(A))] for i in range(len(A[0]))]
     return result
 
-def add(A,B):
+def matrixAdd(A,B):
     """
     Matrix addition, raises arithmetic error if matrix dimensions don't match
 
@@ -38,7 +37,7 @@ def add(A,B):
     result = [[A[i][j] + B[i][j] for j in range(len(A[0]))] for i in range(len(A))]
     return result
 
-def subtract(A,B):
+def matrixSubtract(A,B):
     """
     Matrix subtraction, raises arithmetic error if matrix dimensions don't match
 
@@ -51,7 +50,7 @@ def subtract(A,B):
     result = [[A[i][j] - B[i][j] for j in range(len(A[0]))] for i in range(len(A))]
     return result
 
-def scalarMultiply(alpha,A):
+def matrixScalarMultiply(alpha,A):
     """
     Multiply every element of a matrix by a scalar number
 
@@ -62,20 +61,7 @@ def scalarMultiply(alpha,A):
     result = [[alpha*A[i][j] for j in range(len(A[0]))] for i in range(len(A))]
     return result
 
-def scalarDivide(alpha, A):
-    """
-    Divide every element of a matrix by a scalar number; raises arithmetic error of alpha is zero
-
-    :param alpha: scalar (cannot be zero)
-    :param A: Matrix (list of lists) [m x n]
-    :return: A / alpha [m x n]
-    """
-    if math.isclose(alpha,0.0):
-        raise ArithmeticError('Cannot divide by zero')
-    result = [[A[i][j]/alpha for j in range(len(A[0]))] for i in range(len(A))]
-    return result
-
-def dotProduct(A,B):
+def matrixDotProduct(A,B):
     """
     Matrix inner product, raises arithmetic error if dimensions don't match
 
@@ -85,10 +71,10 @@ def dotProduct(A,B):
     """
     if any([len(A)!=len(B),len(A[0])!=len(B[0])]):
         raise ArithmeticError('Vectors must have same dimension')
-    result = multiply(transpose(A),B)
+    result = matrixMultiply(matrixTranspose(A),B)
     return result
 
-def skew(x,y,z):
+def matrixSkew(x,y,z):
     """
     Defines the skew symmetric matrix (also known as cross product matrix)
 
@@ -100,7 +86,7 @@ def skew(x,y,z):
     result = [[0, -z, y], [z, 0, -x], [-y, x, 0]]
     return result
 
-def crossProduct(A,B):
+def matrixCrossProduct(A,B):
     """
     Vector cross product, raises arithmetic error if vectors are not [3 x 1]
 
@@ -110,10 +96,10 @@ def crossProduct(A,B):
     """
     if any([len(A) != 3, len(A[0]) != 1,len(B) != 3, len(B[0]) != 1]):
         raise ArithmeticError('Cross Product only defined for 3x1 vectors')
-    result = multiply(skew(A[0][0],A[1][0],A[2][0]),B)
+    result = matrixMultiply(matrixSkew(A[0][0],A[1][0],A[2][0]),B)
     return result
 
-def offset(A,x,y,z):
+def matrixOffset(A,x,y,z):
     """
     Shift each column of matrix A by the corresponding entry x,y,z; raises arithmetic error if the matrix A is not [3xn]
 
@@ -128,21 +114,7 @@ def offset(A,x,y,z):
     result = [[pts[0] + x, pts[1] + y, pts[2] + z] for pts in A]
     return result
 
-def vectorNorm(v):
-    """
-    Return a unit vector in the same direction as the input vector; raises arithmetic error if the vector v is not [nx1]
-
-    :param v: [nx1] vector to be scaled
-    :return: vbar = v/||v||, same dimensions as v
-    """
-    if len(v[0]) != 1:
-        raise ArithmeticError('VectorNorm only works on [n x 1] vectors')
-    normlist = [row[0] for row in v]
-    norm = math.sqrt(sum(x**2 for x in normlist))
-    return scalarDivide(norm,v)
-
-
-def size(A):
+def matrixSize(A):
     """
     Size of a matrix as [row, column]
 
@@ -172,43 +144,43 @@ def matrixPrint(A):
 #     A = [[0,1,3],[1,0,5],[3,4,-3]]
 #     print('A =')
 #     MatrixMath.matrixPrint(A)
-#     A = MatrixMath.transpose(A)
+#     A = MatrixMath.matrixTranspose(A)
 #     print('A transpose = ')
 #     MatrixMath.matrixPrint(A)
 #     B = [[2, 1, 6],[1, 2, -3],[-1,2, 7]]
 #     print('B = ')
 #     MatrixMath.matrixPrint(B)
-#     C = MatrixMath.multiply(A,B)
+#     C = MatrixMath.matrixMultiply(A,B)
 #     print('A * B = ')
 #     MatrixMath.matrixPrint(C)
-#     C = MatrixMath.add(A,B)
+#     C = MatrixMath.matrixAdd(A,B)
 #     print('A + B = ')
 #     MatrixMath.matrixPrint(C)
 #     alpha = 1.5
-#     C = MatrixMath.scalarMultiply(alpha,A)
+#     C = MatrixMath.matrixScalarMultiply(alpha,A)
 #     print(str(alpha)+' * A =')
 #     MatrixMath.matrixPrint(C)
-#     R = MatrixMath.transpose([[1,2,3]])
+#     R = MatrixMath.matrixTranspose([[1,2,3]])
 #     print('R = ')
 #     MatrixMath.matrixPrint(R)
 #     print('dot product of R =')
-#     C = MatrixMath.dotProduct(R,R)
+#     C = MatrixMath.matrixDotProduct(R,R)
 #     MatrixMath.matrixPrint(C)
-#     C = MatrixMath.skew(R[0][0],R[1][0],R[2][0])
+#     C = MatrixMath.matrixSkew(R[0][0],R[1][0],R[2][0])
 #     print('Skew symmetric of R =')
 #     MatrixMath.matrixPrint(C)
 #     B = [[-1],[-3],[-5]]
 #     print('B = ')
 #     MatrixMath.matrixPrint(B)
-#     C = MatrixMath.crossProduct(R,B)
+#     C = MatrixMath.matrixCrossProduct(R,B)
 #     print('Cross Product of R and B =')
 #     MatrixMath.matrixPrint(C)
-#     print(MatrixMath.size(C))
+#     print(MatrixMath.matrixSize(C))
 #     A = [[0, 1, 3], [1, 0, 5], [3, 4, -3]]
 #     Xo = [5,10,15]
 #     print('A = ')
 #     MatrixMath.matrixPrint(A)
 #     print('Xo = ',Xo)
-#     C = MatrixMath.offset(A,Xo[0],Xo[1],Xo[2])
+#     C = MatrixMath.matrixOffset(A,Xo[0],Xo[1],Xo[2])
 #     print('A offset by Xo = ')
 #     MatrixMath.matrixPrint(C)

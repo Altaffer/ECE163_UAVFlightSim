@@ -1,8 +1,9 @@
 """
-Author: Luca Altaffer. ECE 163
-Defining Rotation functions for lab 0
+Author: Luca Altaffer (taltaffe@ucsc.edu)
+This file contains tools to perform rotations by producing rotation matrices.
 """
 import math
+import MatrixMath as mm
 from . import MatrixMath
 
 def c(angle):
@@ -36,5 +37,5 @@ def ned2enu(points):
     - use the rotation matrix previously define to rotate given ned point to enu
     """
     rot_n2e = [[0,1,0], [1,0,0], [0,0,-1]]
-    enu = matrixMultiply(rot_n2e,points)
+    enu = mm.Multiply(rot_n2e,points)
     return enu

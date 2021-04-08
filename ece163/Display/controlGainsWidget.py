@@ -2,9 +2,9 @@
 widget which handles the creation of linear models and determining the gains
 """
 
-import PyQt5.QtCore as QtCore
-import PyQt5.QtGui as QtGui
-import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 from ..Controls import VehiclePerturbationModels
 from ..Containers import Controls
@@ -46,22 +46,22 @@ altitudeNames = ['kp_altitude', 'ki_altitude']
 speedNames = ['kp_SpeedfromThrottle', 'ki_SpeedfromThrottle', 'kp_SpeedfromElevator', 'ki_SpeedfromElevator']
 
 
-class displayGainsTest(QtWidgets.QDialog):
+class displayGainsTest(QDialog):
 	def __init__(self, imagePath, parent=None):
 		super().__init__(parent)
-		self.usedLayout = QtWidgets.QVBoxLayout()
+		self.usedLayout = QVBoxLayout()
 		self.setLayout(self.usedLayout)
 		self.setWindowTitle("Test of Control Gains")
-		self.gainResponse = QtWidgets.QLabel("sls")
-		self.gainResponse.setPixmap(QtGui.QPixmap(imagePath))
+		self.gainResponse = QLabel("sls")
+		self.gainResponse.setPixmap(QPixmap(imagePath))
 		self.gainResponse.setScaledContents(True)
-		self.gainResponse.setSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
+		self.gainResponse.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 		self.setMinimumSize(1280, 960)
 
 		self.usedLayout.addWidget(self.gainResponse)
 
-class controlGainsWidget(QtWidgets.QWidget):
-	testFinishedSignal = QtCore.pyqtSignal(bool)
+class controlGainsWidget(QWidget):
+	testFinishedSignal = pyqtSignal(bool)
 	def __init__(self, guiControls, callBackOnSuccesfulGains=None, parent=None):
 		super().__init__(parent)
 		self.parentInstance = parent
@@ -70,21 +70,21 @@ class controlGainsWidget(QtWidgets.QWidget):
 		self.curGains = Controls.controlGains()
 		self.curParameters = Controls.controlTuning()
 		self.callBackOnSuccesfulGains = callBackOnSuccesfulGains
-		self.usedLayout = QtWidgets.QVBoxLayout()
+		self.usedLayout = QVBoxLayout()
 		self.setLayout(self.usedLayout)
 		self.currentLinearModel = Linearized.transferFunctions
 
 		self.testWindow = None
 
-		topBoxEnclosure = QtWidgets.QHBoxLayout()
+		topBoxEnclosure = QHBoxLayout()
 		self.usedLayout.addLayout(topBoxEnclosure)
 
-		tuningBox = QtWidgets.QVBoxLayout()
-		tuningBox.addWidget(QtWidgets.QLabel("Tuning Parameters"))
-		controlBox = QtWidgets.QVBoxLayout()
+		tuningBox = QVBoxLayout()
+		tuningBox.addWidget(QLabel("Tuning Parameters"))
+		controlBox = QVBoxLayout()
 		# outputBox.addWidget(QLabel("Calculated Gains"))
-		gainsBox = QtWidgets.QVBoxLayout()
-		gainsBox.addWidget(QtWidgets.QLabel("Gains"))
+		gainsBox = QVBoxLayout()
+		gainsBox.addWidget(QLabel("Gains"))
 		topBoxEnclosure.addLayout(tuningBox)
 		topBoxEnclosure.addLayout(controlBox)
 		topBoxEnclosure.addLayout(gainsBox)
@@ -100,7 +100,7 @@ class controlGainsWidget(QtWidgets.QWidget):
 		# self.lateralGainsWidget.setLayout(lateralGainsLayout)
 		self.parameterGainValues = dict()
 
-		tuningFormLayout = QtWidgets.QFormLayout()
+		tuningFormLayout = QFormLayout()
 		tuningBox.addLayout(tuningFormLayout)
 		tuningBox.addStretch()
 
@@ -113,31 +113,31 @@ class controlGainsWidget(QtWidgets.QWidget):
 				setattr(savedParameters, pName, 1)
 
 		for boxName, parNames in zip(['Lateral Autopilot', 'Longitudinal Autopilot'], [lateralNames, longitudinalNames]):
-			sectionName = QtWidgets.QLabel(boxName)
-			sectionName.setAlignment(QtCore.Qt.AlignLeft)
+			sectionName = QLabel(boxName)
+			sectionName.setAlignment(Qt.AlignLeft)
 			tuningFormLayout.addRow(sectionName)
 			for parameterName in parNames:
 				# newInput = doubleInputWithLabel.doubleInputWithLabel(parameterName)
-				newInput = QtWidgets.QLineEdit()
-				newValidator = QtGui.QDoubleValidator()
+				newInput = QLineEdit()
+				newValidator = QDoubleValidator()
 				newInput.setValidator(newValidator)
 				newInput.setText("{}".format(getattr(savedParameters, parameterName)))
 				tuningFormLayout.addRow(parameterName, newInput)
 				# inputBox.addWidget(newInput)
 				self.parameterGainValues[parameterName] = newInput
 
-		gainFormLayout = QtWidgets.QFormLayout()
+		gainFormLayout = QFormLayout()
 		gainsBox.addLayout(gainFormLayout)
 		self.gainValuesDict = dict()
 
 		for boxName, gainNames in zip(gainTypes, [rollNames, sideslipNames, courseNames, pitchNames, altitudeNames, speedNames]):
 			# print(boxName, gainNames)
-			sectionName = QtWidgets.QLabel(boxName)
-			sectionName.setAlignment(QtCore.Qt.AlignLeft)
+			sectionName = QLabel(boxName)
+			sectionName.setAlignment(Qt.AlignLeft)
 			gainFormLayout.addRow(sectionName)
 			for gainName in gainNames:
-				newInput = QtWidgets.QLineEdit()
-				newValidator = QtGui.QDoubleValidator()
+				newInput = QLineEdit()
+				newValidator = QDoubleValidator()
 				newInput.setText(str(0.0))
 				newInput.setValidator(newValidator)
 				gainFormLayout.addRow(gainName, newInput)
@@ -146,27 +146,31 @@ class controlGainsWidget(QtWidgets.QWidget):
 
 		gainsBox.addStretch()
 
-		self.calcGainsButton = QtWidgets.QPushButton("Calculate Gains ->")
+
+		# compression = QHBoxLayout()
+		# self.usedLayout.addLayout(compression)
+		# controlBox.addStretch()
+		self.calcGainsButton = QPushButton("Calculate Gains ->")
 		self.calcGainsButton.clicked.connect(self.calculateGainsResponse)
 		controlBox.addWidget(self.calcGainsButton)
 
-		self.calcParametersButton = QtWidgets.QPushButton("<- Calculate Parameters")
+		self.calcParametersButton = QPushButton("<- Calculate Parameters")
 		self.calcParametersButton.clicked.connect(self.calculateParametersResponse)
 		controlBox.addWidget(self.calcParametersButton)
 
-		applyGainsButton = QtWidgets.QPushButton("Apply Gains")
+		applyGainsButton = QPushButton("Apply Gains")
 		applyGainsButton.clicked.connect(self.applyGains)
 		controlBox.addWidget(applyGainsButton)
 
-		self.testGainsButton = QtWidgets.QPushButton("&Test Gains")
+		self.testGainsButton = QPushButton("&Test Gains")
 		self.testGainsButton.clicked.connect(self.startTestGains)
 		controlBox.addWidget(self.testGainsButton)
 
-		self.saveGainsButton = QtWidgets.QPushButton("Save Parameters and Gains")
+		self.saveGainsButton = QPushButton("Save Parameters and Gains")
 		self.saveGainsButton.clicked.connect(self.saveParametersGainsResponse)
 		controlBox.addWidget(self.saveGainsButton)
 		controlBox.addStretch()
-		self.statusText = QtWidgets.QLabel("No Info")
+		self.statusText = QLabel("No Info")
 		self.usedLayout.addWidget(self.statusText)
 		# compression.addStretch()
 
@@ -192,10 +196,14 @@ class controlGainsWidget(QtWidgets.QWidget):
 			trimInput = self.perturbationInstance.trimInputs
 		try:
 			self.currentLinearModel = VehiclePerturbationModels.CreateTransferFunction(trimState, trimInput)
-		except Exception:
+		except Exception as e:
 			import traceback
 			self.parentInstance.raiseExceptionToUser(traceback.format_exc())
 			return
+		# self.perturbationInstance.setTrimStateandInputs(trimState, trimInput)
+		# self.perturbationInstance.CreateStateSpace()
+		# self.perturbationInstance.CreateTransferFunction()
+		# self.perturbationInstance.exportPertubationModels(os.path.join(sys.path[0], VehiclePerturbationModels.defaultPerturbationFilename))
 		self.statusText.setText("Linearized Models Made at {}".format(datetime.datetime.now()))
 		return
 
@@ -217,7 +225,7 @@ class controlGainsWidget(QtWidgets.QWidget):
 		# self.gainsInstance.computeGains(newParameters)
 		try:
 			self.curGains = VehicleControlGains.computeGains(newParameters, self.currentLinearModel)
-		except Exception:
+		except Exception as e:
 			import traceback
 			self.parentInstance.raiseExceptionToUser(traceback.format_exc())
 			return
@@ -243,7 +251,7 @@ class controlGainsWidget(QtWidgets.QWidget):
 		# self.gainsInstance.computeGains(newParameters)
 		try:
 			self.curParameters = VehicleControlGains.computeTuningParameters(newGains, self.currentLinearModel)
-		except Exception:
+		except Exception as e:
 			import traceback
 			self.parentInstance.raiseExceptionToUser(traceback.format_exc())
 			return
