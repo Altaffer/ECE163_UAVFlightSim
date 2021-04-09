@@ -78,22 +78,7 @@ class VehicleGeometry():
 		tail_l = scalingUnit
 		tail_w = 2 * scalingUnit
 
-		self.vertices = [[fuse_l1, 0, 0],  # point 1 [0]
-						 [fuse_l2, fuse_w / 2.0, -fuse_h / 2.0],  # point 2 [1]
-						 [fuse_l2, -fuse_w / 2.0, -fuse_h / 2.0],  # point 3 [2]
-						 [fuse_l2, -fuse_w / 2.0, fuse_h / 2.0],  # point 4 [3]
-						 [fuse_l2, fuse_w / 2.0, fuse_h / 2.0],  # point 5 [4]
-						 [-fuse_l3, 0, 0],  # point 6 [5]
-						 [0, wing_w / 2.0, 0],  # point 7 [6]
-						 [-wing_l, wing_w / 2.0, 0],  # point 8 [7]
-						 [-wing_l, -wing_w / 2.0, 0],  # point 9 [8]
-						 [0, -wing_w / 2.0, 0],  # point 10 [9]
-						 [-fuse_l3 + tail_l, tail_w / 2.0, 0],  # point 11 [10]
-						 [-fuse_l3, tail_w / 2.0, 0],  # point 12 [11]
-						 [-fuse_l3, -tail_w / 2.0, 0],  # point 13 [12]
-						 [-fuse_l3 + tail_l, -tail_w / 2.0, 0],  # point 14 [13]
-						 [-fuse_l3 + tail_l, 0, 0],  # point 15 [14]
-						 [-fuse_l3, 0, -tail_h]]  # point 16 [15]
+		self.vertices = [[0.9652,0,0]]
 
 		self.faces = [[0, 1, 2],
 					  [0, 1, 4],
