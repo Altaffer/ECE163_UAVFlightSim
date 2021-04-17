@@ -255,7 +255,7 @@ p1 = VDM.VehicleDynamicsModel()
 p2=p1.getVehicleDerivative()
 fEuler =p1.ForwardEuler(0.01,statex, stated)
 a = [p2.pn,p2.pe,p2.pd,p2.u,p2.v,p2.w,p2.p,p2.q,p2.r]
-expec = [0,0,0,0,0,0,0,0,0]
+expec = [0.01,0,0,0,0.01,0,0,0,0.01]
 if not evaluateTest(cur_test, (expec == a) ):
 	print(f"{expec} != {a}")
 

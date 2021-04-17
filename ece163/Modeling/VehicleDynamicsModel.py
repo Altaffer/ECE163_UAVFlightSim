@@ -58,11 +58,11 @@ class VehicleDynamicsModel():
         omegax = [[0,-rr,(qq)],[(rr),0,-pp],[-qq,(pp),0]]
         mag_omegaxdT =math.sqrt((2*(pp*dT)**2)+(2*(qq*dT)**2)+(2*(rr*dT)**2))
         #Using the contraint of the size of mag_w of it being greater than or less than 0.2
-        if mag_omegaxdT >= 0.2:
-            sin = math.sin((magw*dT)/magw)
+        if mag_omegaxdT >= 0.02:
+            sin = math.sin(magw*dT)/magw
             cos = (1-math.cos(magw*dT))/(magw**2)
             I = ([[1,0,0],[0,1,0],[0,0,1]])
-            Rexp = mm.matrixAdd((mm.matrixSubtract(I, mm.matrixScalarMultiply(sin,omegax))),mm.matrixScalarMultiply(cos,mm.matrixMultiply(omegax,omegax)))
+            Rexp = mm.matrixAdd(mm.matrixSubtract(I, mm.matrixScalarMultiply(sin,omegax)),mm.matrixScalarMultiply(cos,mm.matrixMultiply(omegax,omegax)))
             return Rexp
         else:
             sin = dT-(((dT**3)*(magw**2))/6)+(((dT**5)*(magw**4))/120)
@@ -97,7 +97,7 @@ class VehicleDynamicsModel():
         dot.roll = g[0][0]
 
         #derivatives of p, p, are r
-        wx = [[0, state.r, (-state.q)], [(-state.r), 0, state.p], [state.q, (-state.p), 0]]
+        wx = [[0, -state.r, (state.q)], [(state.r), 0, -state.p], [-state.q, (state.p), 0]]
         M = [[forcesMoments.Mx], [forcesMoments.My], [forcesMoments.Mz]]
         q = mm.matrixMultiply(VPC.JinvBody, mm.matrixSubtract(M,mm.matrixMultiply(wx,mm.matrixMultiply(VPC.Jbody,w))))
         dot.p = q[0][0]
