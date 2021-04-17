@@ -8,13 +8,13 @@ from ece163.Modeling import VehicleDynamicsModel as VDM
 from ece163.Constants import VehiclePhysicalConstants as VPC
 from ece163.Containers import States
 from ece163.Containers import Inputs
-
+from ece163.Utilities import Rotations
 
 lab_name = "ECE163_Lab1"
 
 parser = tt.parse_args_for_lab(lab_name)
 args = parser.parse_args()
-# mode = "GENERATE" #helpful for debugging, leave in for now
+mode = "GENERATE" #helpful for debugging, leave in for now
 
 #make our testManager
 tm = tt.TestManager(lab_name, args)
@@ -35,6 +35,7 @@ def freefall_procedure(state_vars, keys_to_check):
 	#update the state with the values we care about:
 	for key, value in state_vars.items():
 		testState.__dict__[key] = value
+	testState.R = Rotations.euler2DCM(testState.yaw, testState.pitch, testState.roll)
 		
 	#and now the student code does it's thing
 	testVDM.setVehicleState(testState)
@@ -107,6 +108,7 @@ def forced_procedure(state_vars, keys_to_check):
 			testState.__dict__[key] = value
 		else:
 			testFm.__dict__[key] = value  #luckily forcesMoments and state don't share any variable names!
+	testState.R = Rotations.euler2DCM(testState.yaw, testState.pitch, testState.roll)
  		
 	#and now the student code does it's thing
 	testVDM.setVehicleState(testState)
@@ -167,6 +169,7 @@ def rexp_procedure(inputs):
 		testState.__dict__[key] = value
 	for key, value in inputs["dot_vars"].items():
 		testDot.__dict__[key] = value
+	testState.R = Rotations.euler2DCM(testState.yaw, testState.pitch, testState.roll)
 		 
 		 
 	#and now the student code does it's thing
@@ -216,6 +219,7 @@ def FE_procedure(inputs):
 		testState.__dict__[key] = value
 	for key, value in inputs["dot_vars"].items():
 		testDot.__dict__[key] = value
+	testState.R = Rotations.euler2DCM(testState.yaw, testState.pitch, testState.roll)
 		 
 		 
 	#and now the student code does it's thing
@@ -261,6 +265,7 @@ def Integrate_onestep_procedure(inputs):
 		testState.__dict__[key] = value
 	for key, value in inputs["dot_vars"].items():
 		testDot.__dict__[key] = value
+	testState.R = Rotations.euler2DCM(testState.yaw, testState.pitch, testState.roll)
 		 
 		 
 	#and now the student code does it's thing
@@ -298,6 +303,8 @@ def Update_procedure(inputs, iterations):
 			testState.__dict__[key] = value
 	for key, value in inputs["forces"].items():
 			testFm.__dict__[key] = value  #luckily forcesMoments and state don't share any variable names!
+	testState.R = Rotations.euler2DCM(
+		testState.yaw, testState.pitch, testState.roll)
  		
 	#and now the student code does it's thing
 	testVDM.setVehicleState(testState)
@@ -339,7 +346,7 @@ for steps in [1, 2, 10, 100, 1000]:
 		for fm in Update_fMs:
 			desc2 = "-".join(fm.keys())
 			tm.test(f"Update_{steps}-steps_{desc1}_{desc2}", Steps_procedure,
-			 {"initial_state":params, "forces":dot_params})
+			 {"initial_state":state, "forces":fm})
 	
 
 tm.end_block()
