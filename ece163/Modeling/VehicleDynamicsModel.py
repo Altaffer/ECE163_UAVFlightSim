@@ -19,7 +19,7 @@ class VehicleDynamicsModel():
 
     def setVehicleState(self, state):
         #set self.state to the state
-        self.state = self.state
+        self.state = state
         return
 
     def getVehicleState(self):
@@ -50,9 +50,9 @@ class VehicleDynamicsModel():
 
     def Rexp(self, dT, state, dot):
         #trapezoidal approx of p,q,r
-        pp = state.p + (0.5 * dot.p)
-        qq = state.q + (0.5 * dot.q)
-        rr = state.r + (0.5 * dot.q)
+        pp = state.p + (0.5 * dot.p * dT)
+        qq = state.q + (0.5 * dot.q * dT)
+        rr = state.r + (0.5 * dot.r * dT)
         #taking the magniude of w, trapezoidal
         magw = math.sqrt(pp**2 + qq**2 + rr**2)
         omegax = [[0,-rr,(qq)],[(rr),0,-pp],[-qq,(pp),0]]
@@ -96,7 +96,7 @@ class VehicleDynamicsModel():
         dot.pitch = g[1][0]
         dot.roll = g[0][0]
 
-        #derivatives of p, p, are r
+        #derivatives of p, q, are r
         wx = [[0, -state.r, (state.q)], [(state.r), 0, -state.p], [-state.q, (state.p), 0]]
         M = [[forcesMoments.Mx], [forcesMoments.My], [forcesMoments.Mz]]
         q = mm.matrixMultiply(VPC.JinvBody, mm.matrixSubtract(M,mm.matrixMultiply(wx,mm.matrixMultiply(VPC.Jbody,w))))
