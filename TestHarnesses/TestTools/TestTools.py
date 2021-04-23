@@ -2,6 +2,8 @@ import math
 import argparse
 import pickle
 
+import re
+
 """
 Modes are:
 	
@@ -52,6 +54,9 @@ def parse_args_for_lab(lab_name):
 	parser.add_argument("-e", "--error_skipping", action="store_true",
 						help="By default, errors generated during testing are raised to the top level, halting the test harness's execution.  This option specifies that the test harness should continue running, instead.")
 	
+	parser.add_argument("-t", "--tests_to_run",default = None,
+						help="""A regex to select specific tests.  If used, only tests whose name matches this regex string will run.""")
+	
 	return parser
 	
 
@@ -71,17 +76,54 @@ def ttprint(level, to_print):
 
 #%% various helpers:
 	
-def deep_compare(a, b, rel_tol = 0, abs_tol = 0):
+def rel_err(obs, exp):
+	if obs == exp:
+		return 0
+	elif abs(exp) < 1e-15:  
+# 		return abs(obs) #Dunno what to do for divbyzero, I guess just absolute error
+		return math.nan
+	else:
+		return ((exp-obs)/abs(exp))
+	
+# def sigfig(x, digits=6, epsilon = 1e-9):
+# 	if x == 0 or not math.isfinite(x):
+# 		return x
+#     # digits -= math.ceil(math.log10(abs(x)))
+# 	# return round(x, digits)
+# 	return round(x, digits - int(math.floor(math.log10(max(abs(x), abs(epsilon))))) - 1)
+# 	
+def deep_compare(name, obs, exp, rel_tol = 0, abs_tol = 0):
 	#first, try recursing:
 	try:
-		if len(a) != len(b):
-			raise Exception(f"tried to compare object with len {len(a)} to object with len {len(b)}")
-		recursed = [deep_compare(ai, bi, rel_tol=rel_tol,abs_tol=abs_tol)
-				  for ai, bi in zip(a,b)]
+		if len(obs) != len(exp):
+			raise Exception(f"tried to compare object with len {len(obs)} to object with len {len(exp)}")
+		recursed = [deep_compare(f"{name}_{i}", ai, bi, rel_tol=rel_tol,abs_tol=abs_tol)
+				  for i, (ai, bi) in enumerate(zip(obs,exp))]
 		return all(recursed)
 	except TypeError: #this happens if there's no length, it's our base case
-		return math.isclose(a,b, abs_tol = abs_tol, rel_tol = rel_tol)
+		passed= math.isclose(obs,exp, abs_tol = abs_tol, rel_tol = rel_tol)
+		if passed:
+			ttprint(DEBUG, f"      {name:>10}: exp={exp:>13e} {green}=={white} obs={obs:>13e}  ")
+		else:
+			ttprint(DEBUG, f"      {name:>10}: exp={exp:>13e} {red}!={white} obs={obs:>13e} ({rel_err(obs,exp):>13e}) ")
+		return passed
 		
+def deep_rel_err(obs,exp):
+	#first, try recursing:
+	try:
+		if len(obs) != len(exp):
+			raise Exception(f"tried to compare object with len {len(obs)} to object with len {len(exp)}")
+		recursed = [deep_rel_err(ai, bi)
+				  for ai, bi in zip(obs,exp)]
+# 		print(recursed)
+		return (sum(recursed))
+	except TypeError: #this happens if there's no length, it's our base case
+		return abs(rel_err(obs,exp))
+	except ValueError: #this happens if there's a nan.  There is probably a better way to handle these but who knows?
+		return math.nan
+		
+
+
 if __name__=="__main__":
 	assert( deep_compare( 4, 4) )
 	assert( deep_compare([3,3,1], [3,3,1]) )
@@ -104,9 +146,11 @@ class TestManager:
 		set_global_verbosity_level(args.verbosity)
 		
 		self.outcomes = {} #store outcomes of all tests
+		self.rel_errs = {} #store relative errors of failed testsOB
 		self.all_blocks = {} #also store outcomes by block
 
 		self.picklePath = f'{lab_name}_data.pickle'
+		self.tests_to_run = args.tests_to_run
 
 		if self.mode == "GENERATE":
 			self.results = {}
@@ -127,6 +171,9 @@ class TestManager:
 		
 		"""
 		if self.mode == "RUN":
+			if self.tests_to_run:
+				if not re.search(self.tests_to_run, name):
+					return
 			
 			ttprint(DEBUG, f"   Running test {name} with inputs{inputs}...")
 			expected_outputs = self.results[name]
@@ -134,7 +181,7 @@ class TestManager:
 			#run student code:
 			try:
 				observed_outputs = procedure(inputs)
-				outcome = self.compare_outputs(
+				outcome, err = self.compare_outputs(
 					observed_outputs, expected_outputs, 
 					rel_tol = rel_tol, abs_tol=abs_tol)
 			except Exception as e:
@@ -145,12 +192,14 @@ class TestManager:
 					raise e
 			
 			self.outcomes[name] = outcome
-			self.cur_block_results[name] = outcome
+			self.rel_errs[name] = err
+			if not self.tests_to_run:
+				self.cur_block_results[name] = outcome
 			if outcome:
-				ttprint(DEBUG, f"   {green}test {name} passed{white}\n")
+				ttprint(DEBUG, f"   {green}test {name} passed{white}")
 			else:
-				ttprint(DETAIL, f"   {red}test {name} failed{white}\n")
-			
+				ttprint(DETAIL, f"   {red}test {name} failed{white}")
+			ttprint(DEBUG,"")#just here for the  newline 
 		elif self.mode == "GENERATE":
 			
 			if name in self.results.keys():
@@ -162,19 +211,27 @@ class TestManager:
 			self.results[name] = outputs
 			
 	def start_block(self, block_name):
-		"""Used to break test results into more readable chunks"""
+		"""
+		Used to break test results into more readable chunks.  This function starts a new block.
+		"""
+		if self.tests_to_run:  #just don't use blocks when in this mode
+			return
 		self.cur_block_name = block_name
 		ttprint(SUMMARY, f"{cyan}Beginning test section {self.cur_block_name}{white}")
 		self.cur_block_results = {}
 		
 	def end_block(self):
+		"""
+		Used to break test results into more readable chunks.  This method ends a block, causing a short summary to be printed.
+		"""
+		if self.tests_to_run: #just don't use blocks when in this mode
+			return
 		if not self.mode=="RUN":
 			return
-		"""Used to break test results into more readable chunks"""
 		ttprint(DETAIL, f"  results for block {self.cur_block_name}")
-		for name, outcome in self.cur_block_results.items():
-			if not outcome:
-				ttprint(DETAIL, f"  Failed test {red}{name}{white}")
+# 		for name, outcome in self.cur_block_results.items():
+# 			if not outcome:
+# 				ttprint(DETAIL, f"  Failed test {red}{name}{white}")
 		passed = sum(self.cur_block_results.values())
 		total = len(self.cur_block_results)
 		color = green if passed==total else (
@@ -190,37 +247,42 @@ class TestManager:
 		
 		#and otherwise all is good
 		pass_list = []
+		err_list = []
 		ttprint(DEBUG,"   Outputs:")
 		for key, expected_val in expected.items(): 
 			observed_val = observed[key]
 # 			passed = math.isclose(expected_val,observed_val, 
 # 						 rel_tol = rel_tol, abs_tol = abs_tol)
-			passed = deep_compare(expected_val,observed_val, 
+			passed = deep_compare(key, expected_val,observed_val, 
 						 rel_tol = rel_tol, abs_tol = abs_tol)
+			err = deep_rel_err(observed_val, expected_val)
 			pass_list.append(passed)
-			if passed:
-				ttprint(DEBUG, f"      {key}: exp={expected_val} {green}=={white} obs={observed_val}  ")
-			else:
-				ttprint(DEBUG, f"      {key}: exp={expected_val} {red}!={white} obs={observed_val}  ")
+			err_list.append(err)
+# 			if passed:
+# 				ttprint(DEBUG, f"      {key}: exp={expected_val} {green}=={white} obs={observed_val}  ")
+# 			else:
+# 				ttprint(DEBUG, f"      {key}: exp={expected_val} {red}!={white} obs={observed_val}  ")
 				
 		if all(pass_list):
-			return True		
+			return (True, sum(err_list)/len(err_list))
 		else:
-			return False
+			return (False, sum(err_list)/len(err_list))
 		
 	def conclude(self):
 		if self.mode == "RUN":
 			ttprint(SUMMARY, "Test Harness complete, printing summary:")
-			self.print_summary()
+			self.print_run_summary()
 			
 		if self.mode == "GENERATE":
 			ttprint(SUMMARY, f"{green}Test battery complete,{white} dumping results into {self.picklePath}...")
 			with open(self.picklePath, 'wb') as f:
 				pickle.dump(self.results, f)
+			self.print_generate_summary()
 		
-	def print_summary(self):
+	def print_run_summary(self):
 		passes = 0
 		fails = 0
+
 		for testname, outcome in self.outcomes.items():
 			if outcome == True:
 				passes += 1 
@@ -233,7 +295,12 @@ class TestManager:
 			ttprint(DETAIL, "List of failed tests:")
 			for name, outcome in self.outcomes.items():
 				if not outcome:
-					ttprint(DETAIL, f"{red}{name}{white}")
+					err = self.rel_errs[name]
+					ttprint(DETAIL, f"{red}{name:40}{white} ({err:e})")
+					
+	def print_generate_summary(self):
+			ttprint(DETAIL, "All tests:")
+			[ttprint(DETAIL, "   "+test) for test in self.results.keys()]	
 			
 			
 #%%

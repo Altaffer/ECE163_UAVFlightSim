@@ -156,6 +156,34 @@ tm.end_block()
 #%% How about some Rexp() testing?
 
 tm.start_block("Rexp tests")
+
+def rexp_is_rot_procedure(inputs):
+	testState = States.vehicleState()
+	testDot =  States.vehicleState()
+	testVDM = VDM.VehicleDynamicsModel()
+	
+	#update the state with the values we care about:
+	for key, value in inputs["state_vars"].items():
+		testState.__dict__[key] = value
+	for key, value in inputs["dot_vars"].items():
+		testDot.__dict__[key] = value
+	testState.R = Rotations.euler2DCM(testState.yaw, testState.pitch, testState.roll)
+	
+	#and now the student code does it's thing
+	R = testVDM.Rexp(VPC.dT, testState, testDot)
+	
+	ret_dict = {}
+	ret_dict["row0_dot_row1"] = sum([R[0][i] * R[1][i] for i in range(3)])
+	ret_dict["row1_dot_row2"] = sum([R[1][i] * R[2][i] for i in range(3)])
+	ret_dict["row2_dot_row0"] = sum([R[2][i] * R[0][i] for i in range(3)])
+	ret_dict["R_det"] = (
+		 R[0][0] * (R[1][1]*R[2][2] - R[1][2]*R[2][1]) +
+		-R[0][1] * (R[1][0]*R[2][2] - R[1][2]*R[2][0]) +
+		 R[0][2] * (R[1][0]*R[2][1] - R[1][1]*R[2][0])
+		)
+	
+	return ret_dict
+	
 def rexp_procedure(inputs):
 # 	tt.ttprint(tt.DEBUG, f"running with inputs {state_vars}")
 	
@@ -182,6 +210,10 @@ R_test_params = [
 	{"q": -3},
 	{"r": -0.5},
 	{"p": 4, "q": -3, "r":1},
+	#some tiny angles:
+	{"p": -.18},
+	{"r": -.009},
+	{"p": .005, "q": .005, "r":.005},
 	#classic one at gimbal lock:
 	{"pitch":tt.d2r(90), "p":3, "q":2, "r":-1},
 	{"pitch":tt.d2r(-90), "roll":tt.d2r(-90), "p":3, "q":2, "r":-1},
@@ -190,6 +222,8 @@ R_test_params = [
 tt.ttprint(tt.DETAIL, "running Rexp for various inputs with zero Pdot")
 for i, params in enumerate(R_test_params):
 	desc = "-".join(params.keys())
+	tm.test(f"Rexp_nodot_orthonormality_{i}_{desc}",rexp_is_rot_procedure,
+		   {"state_vars":params, "dot_vars":{}})
 	tm.test(f"Rexp_nodot_{i}_{desc}",rexp_procedure,
 		   {"state_vars":params, "dot_vars":{}})
 tt.ttprint(tt.DETAIL, "running Rexp for various inputs with nonzero Pdot")
@@ -197,6 +231,8 @@ for i, params in enumerate(R_test_params):
 	desc1 = "-".join(params.keys())
 	dot_params = R_test_params[(i+1)%len(R_test_params)]
 	desc2 = "-".join(dot_params.keys())
+	tm.test(f"Rexp_orthonormality_{i}_{desc1}_{desc2}", rexp_is_rot_procedure,
+		 {"state_vars":params, "dot_vars":dot_params})
 	tm.test(f"Rexp_dot_{i}_{desc1}_{desc2}", rexp_procedure,
 		 {"state_vars":params, "dot_vars":dot_params})
 	
@@ -338,16 +374,16 @@ steps = [1, 2, 10, 100, 1000] #too many?  NAAAAH
 
 tt.ttprint(tt.DETAIL, "running Update() iteratively for various numbers of steps with various initial conditions and applied forces")
 
-
+i=0
 for steps in [1, 2, 10, 100, 1000]:
 	Steps_procedure = lambda inputs: Update_procedure(inputs, steps)
 	for state in Update_initial_states:
 		desc1 = "-".join(state.keys())
 		for fm in Update_fMs:
 			desc2 = "-".join(fm.keys())
-			tm.test(f"Update_{steps}-steps_{desc1}_{desc2}", Steps_procedure,
+			tm.test(f"Update_{i}_{steps}-steps_{desc1}_{desc2}", Steps_procedure,
 			 {"initial_state":state, "forces":fm})
-	
+			i+= 1
 
 tm.end_block()
 #%% wrap it up by printing out a summary or by pickling our results:
