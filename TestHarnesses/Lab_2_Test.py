@@ -78,7 +78,7 @@ cca_alphas = [60, 30, 10, 5, 1, 0.1, 0, -0.1, -1, -5, -10, -30, -60, -170, -180]
 
 for i, alpha in enumerate(cca_alphas):
 	inputs = {"alpha":tt.d2r(alpha)}
-	desc1 = str(inputs["alpha"]).replace(".","")
+	desc1 = str(alpha).replace(".","")
 	tm.test(f"CalculateCoeff_alpha_{i}_{desc1}", CCA_procedure,
 	 inputs)
 	

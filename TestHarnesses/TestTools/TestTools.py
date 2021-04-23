@@ -253,7 +253,7 @@ class TestManager:
 			observed_val = observed[key]
 # 			passed = math.isclose(expected_val,observed_val, 
 # 						 rel_tol = rel_tol, abs_tol = abs_tol)
-			passed = deep_compare(key, expected_val,observed_val, 
+			passed = deep_compare(key, observed_val, expected_val,
 						 rel_tol = rel_tol, abs_tol = abs_tol)
 			err = deep_rel_err(observed_val, expected_val)
 			pass_list.append(passed)
