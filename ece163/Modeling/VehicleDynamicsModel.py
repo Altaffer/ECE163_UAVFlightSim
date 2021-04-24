@@ -131,11 +131,22 @@ class VehicleDynamicsModel():
     def IntegrateState(self, dT, state, dot):
         #Using forward euler to find the integral of state while using Rexp for R and keeping yaw, pitch, roll, alpha, beta,
         # Va and chi constant
-        newState = self.ForwardEuler(dT, state, dot)
+        newState = States.vehicleState()
+        Feuler = self.ForwardEuler(dT, state, dot)
+        newState.pn = Feuler.pn
+        newState.pe = Feuler.pe
+        newState.pd = Feuler.pd
+        newState.u = Feuler.u
+        newState.v = Feuler.v
+        newState.w = Feuler.w
+        newState.p = Feuler.p
+        newState.q = Feuler.q
+        newState.r = Feuler.r
         newState.R = mm.matrixMultiply(self.Rexp(dT,state,dot), state.R)
-        newState.yaw = state.yaw
-        newState.pitch = state.pitch
-        newState.roll = state.roll
+        h = Rotations.dcm2euler(newState.R)
+        newState.yaw = h[0]
+        newState.pitch = h[1]
+        newState.roll = h[2]
         newState.alpha = state.alpha
         newState.beta = state.beta
         newState.Va = state.Va

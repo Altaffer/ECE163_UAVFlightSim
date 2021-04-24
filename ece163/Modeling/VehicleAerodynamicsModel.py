@@ -70,9 +70,9 @@ class VehicleAerodynamicsModel():
          For the coefficient of drag, we are using the parabolic form: CD = CDp + (CLalpha)^2/(pi*AR*e)"""
 
         #using the defined sigma function from Hw2
-        def sigma(a, a0, M):
-            num = (1 + math.exp(-M * (a - a0)) + math.exp(M * (a + a0)))
-            den = (1 + math.exp(-M * (a - a0))) * (1 + math.exp(M * (a + a0)))
+        def sigma(a):
+            num = (1 + math.exp(-VPC.M * (a - VPC.alpha0)) + math.exp(VPC.M * (a + VPC.alpha0)))
+            den = (1 + math.exp(-VPC.M * (a - VPC.alpha0))) * (1 + math.exp(VPC.M * (a + VPC.alpha0)))
             return num / den
 
         #using the define Cl lamimar function from Hw2
@@ -96,10 +96,10 @@ class VehicleAerodynamicsModel():
             return cd_tur
 
         #Putting the functions all together to solve for Cl and Cd
-        C_L = (((1 - sigma(alpha, VPC.alpha0, VPC.M)) * Cl_lam(alpha, VPC.CL0, VPC.CLalpha)) +
-               (sigma(alpha, VPC.alpha0, VPC.M) * Cl_tur(alpha)))
-        C_D = ((1 - sigma(alpha, VPC.alpha0, VPC.M)) * Cd_lam(alpha, VPC.CDp, VPC.CL0, VPC.CLalpha, VPC.AR) +
-                (sigma(alpha, VPC.alpha0, VPC.M) * Cd_tur(alpha)))
+        C_L = (((1 - sigma(alpha)) * Cl_lam(alpha, VPC.CL0, VPC.CLalpha)) +
+               (sigma(alpha) * Cl_tur(alpha)))
+        C_D = ((1 - sigma(alpha)) * Cd_lam(alpha, VPC.CDp, VPC.CL0, VPC.CLalpha, VPC.AR) +
+                (sigma(alpha) * Cd_tur(alpha)))
 
         #defining Cm
         C_M = (VPC.CM0 + (VPC.CMalpha * alpha))
@@ -233,9 +233,9 @@ class VehicleAerodynamicsModel():
         state.Va = math.hypot(state.u, state.v, state.w)  # Airspeed
         state.alpha = math.atan2(state.w, state.u)  # angle of attack
         if math.isclose(state.Va, 0.0):  # Sideslip Angle, no airspeed
-            beta = 0.0
+            state.beta = 0.0
         else:
-            beta = math.asin(state.v / state.Va)  # Sideslip Angle, normal definition
+            state.beta = math.asin(state.v / state.Va)  # Sideslip Angle, normal definition
 
         #Recalling the functions defined
         Fgravity = self.gravityForces(state)
