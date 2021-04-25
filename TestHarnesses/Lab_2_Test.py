@@ -20,7 +20,7 @@ lab_name = "ECE163_Lab2"
 
 parser = tt.parse_args_for_lab(lab_name)
 args = parser.parse_args()
-# mode = "GENERATE" #helpful for debugging, leave in for now
+# args.generate = True #helpful for debugging, leave in for now
 
 #make our testManager
 tm = tt.TestManager(lab_name, args)
@@ -101,15 +101,16 @@ def aeroForces_procedure(inputs):
 	return {key:fM.__dict__[key] for key in keys_to_check}
 
 #I think we can reuse freefall test params here
-Update_initial_states = [
-	{"pn":10},
-	{"pd":10},
-	{"pe":10},
-	{"pn":-10, "pe":-10, "pd":-10},
+aero_initial_v = [
 	{"u":5},
 	{"v":5},
 	{"w":5},
 	{"u":-3, "v":-3, "w":-3},
+	{"u":3, "v":3, "w":3},
+	{}
+	]
+aero_initial_non_v = [
+	{"pn":-10, "pe":-10, "pd":-10},
 	{"p":2},
 	{"q":2},
 	{"r":2},
@@ -126,9 +127,13 @@ Update_initial_states = [
 	  "yaw":tt.d2r(30), "pitch":tt.d2r(-20), "roll":tt.d2r(-30) }
 	]
 
-for i, state in enumerate(Update_initial_states):
-	desc1 = "-".join(state.keys())
-	tm.test(f"aeroForces_{i}_{desc1}", aeroForces_procedure, state)
+for i, (non_v, v) in enumerate(itertools.product(
+		aero_initial_non_v, aero_initial_v)):
+	
+	desc1 = "-".join(non_v.keys())
+	desc2 = "-".join(v.keys())
+	state = {**non_v, **v}
+	tm.test(f"aeroForces_{i}_{desc1}_{desc2}", aeroForces_procedure, state)
 	
 tm.end_block()
 
@@ -216,7 +221,7 @@ def updateForces_procedure(inputs):
 	
 	#and now the student code does it's thing
 	testVAM.getVehicleDynamicsModel().setVehicleState(testState)
-	fM = testVAM.controlForces(testState, testControls)
+	fM = testVAM.updateForces(testState, testControls)
 	
 	keys_to_check =[
 		"Fx", "Fy", "Fz", "Mx", "My", "Mz"]

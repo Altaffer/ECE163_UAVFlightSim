@@ -14,7 +14,7 @@ lab_name = "ECE163_Lab1"
 
 parser = tt.parse_args_for_lab(lab_name)
 args = parser.parse_args()
-mode = "GENERATE" #helpful for debugging, leave in for now
+# args.generate = True #helpful for debugging, leave in for now
 
 #make our testManager
 tm = tt.TestManager(lab_name, args)
@@ -209,11 +209,18 @@ R_test_params = [
 	{"p": 4},
 	{"q": -3},
 	{"r": -0.5},
+	{"p": 4, "q": -3, "r":-1},
 	{"p": 4, "q": -3, "r":1},
+	{"p": 4, "q":  3, "r":1},
 	#some tiny angles:
 	{"p": -.18},
-	{"r": -.009},
-	{"p": .005, "q": .005, "r":.005},
+	{"q": -.18},
+	{"r": -.18},
+	{"p": .009},
+	{"q": .009},
+	{"r": .009},
+	{"p":  .005, "q": .005, "r": .005},
+	{"p": -.005, "q": .005, "r":-.005},
 	#classic one at gimbal lock:
 	{"pitch":tt.d2r(90), "p":3, "q":2, "r":-1},
 	{"pitch":tt.d2r(-90), "roll":tt.d2r(-90), "p":3, "q":2, "r":-1},

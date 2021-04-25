@@ -40,6 +40,7 @@ pink='\033[95m'
 lightcyan='\033[96m'
 white='\033[37m'
 
+
 #%% Argparse:
 
 def parse_args_for_lab(lab_name):
@@ -57,10 +58,17 @@ def parse_args_for_lab(lab_name):
 	parser.add_argument("-t", "--tests_to_run",default = None,
 						help="""A regex to select specific tests.  If used, only tests whose name matches this regex string will run.""")
 	
+	parser.add_argument("--no_color", action = "store_true",
+						help="""Print with no color flags""")
+	
 	return parser
 	
-
-
+#%% global actions for args:
+	
+def apply_args(args):
+	if args.no_color:
+		global black, red, green, orange, blue, purple, cyan, lightgrey, darkgrey, lightred, lightgreen, yellow, lightblue, pink, lightcyan, white 
+		black, red, green, orange, blue, purple, cyan, lightgrey, darkgrey, lightred, lightgreen, yellow, lightblue, pink, lightcyan, white =  "", "","", "", "", "", "", "", "", "", "", "", "", "", "", ""
 #%% logging controls:
 def set_global_verbosity_level(level_name):
 	global global_verbosity_level
@@ -103,9 +111,9 @@ def deep_compare(name, obs, exp, rel_tol = 0, abs_tol = 0):
 	except TypeError: #this happens if there's no length, it's our base case
 		passed= math.isclose(obs,exp, abs_tol = abs_tol, rel_tol = rel_tol)
 		if passed:
-			ttprint(DEBUG, f"      {name:>10}: exp={exp:>13e} {green}=={white} obs={obs:>13e}  ")
+			ttprint(DEBUG, f"      {name:>10}: exp={exp:>13e} {green}=={white} obs={obs:>13e} ({rel_err(obs,exp):>13e})")
 		else:
-			ttprint(DEBUG, f"      {name:>10}: exp={exp:>13e} {red}!={white} obs={obs:>13e} ({rel_err(obs,exp):>13e}) ")
+			ttprint(DEBUG, f"      {name:>10}: exp={exp:>13e} {red}!={white} obs={obs:>13e} ({rel_err(obs,exp):>13e})")
 		return passed
 		
 def deep_rel_err(obs,exp):
