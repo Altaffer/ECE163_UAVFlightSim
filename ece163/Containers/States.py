@@ -56,7 +56,7 @@ class vehicleState:
             self.beta = 0.0
         else:
             self.beta = math.asin(self.v/self.Va)       # Sideslip Angle, normal definition
-        pdotned = MatrixMath.matrixMultiply(MatrixMath.matrixTranspose(self.R),[[self.u],[self.v],[self.w]])
+        pdotned = MatrixMath.multiply(MatrixMath.transpose(self.R),[[self.u],[self.v],[self.w]])
         self.chi = math.atan2(pdotned[1][0],pdotned[0][0])
         return
 
@@ -99,9 +99,9 @@ class windState:
         :param Wn: Constant wind velocity in inertial North direction [m/s]
         :param We: Constant wind velocity in inertial East direction [m/s]
         :param Wd: Constant wind velocity in inertial Down direction [m/s]
-        :param Wu: Gust wind velocity in body-x direction [m/s]
-        :param Wv: Gust wind velocity in body-y direction [m/s]
-        :param Ww: Gust wind velocity in body-z direction [m/s]
+        :param Wu: Gust wind velocity in static wind x direction [m/s]
+        :param Wv: Gust wind velocity in static wind y direction [m/s]
+        :param Ww: Gust wind velocity in static wind z direction [m/s]
         """
         self.Wn = Wn
         self.We = We

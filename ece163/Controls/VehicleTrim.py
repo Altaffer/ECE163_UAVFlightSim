@@ -29,7 +29,7 @@ class VehicleTrim():
 		the trim states (and derivatives of the state) along with the trim controls within the structure of the class.
 		"""
 		self.VehicleTrimModel = VehicleAerodynamicsModel.VehicleAerodynamicsModel()
-		self.VehicleTrimModel.windModel.reset()
+		self.VehicleTrimModel.getWindModel().reset()
 		self.ControlTrim = Inputs.controlInputs()
 		return
 
@@ -40,7 +40,7 @@ class VehicleTrim():
 
 		:return: state: the trim state of the vehicle
 		"""
-		return self.VehicleTrimModel.vehicleDynamics.state
+		return self.VehicleTrimModel.getVehicleState()
 
 	def getTrimControls(self):
 		"""
@@ -59,7 +59,7 @@ class VehicleTrim():
 	# 	:param filepath: path locates file for storing
 	# 	:return: none
 	# 	"""
-	# 	trimState = self.VehicleTrimModel.vehicleDynamics.state
+	# 	trimState = self.VehicleTrimModel.getVehicleState()
 	# 	trimControls = self.ControlTrim
 	# 	with open(filepath, 'wb') as f:
 	# 		pickle.dump((trimState, trimControls), f)
@@ -83,8 +83,8 @@ class VehicleTrim():
 		:return: True or False (True if control inputs in range, False if not)
 		"""
 
-		self.VehicleTrimModel.vehicleDynamics.reset()
-		self.VehicleTrimModel.windModel.reset()
+		self.VehicleTrimModel.getVehicleDynamicsModel().reset()
+		self.VehicleTrimModel.getWindModel().reset()
 
 		if any([math.isclose(Kappastar, 0.0), math.fabs(Kappastar) < (1/VPC.RstarMax)]):
 			phistar = 0.0
@@ -146,9 +146,9 @@ class VehicleTrim():
 					 ])
 					 })
 
-		x0 = numpy.array([[self.VehicleTrimModel.vehicleDynamics.state.pn],	#pn [0]
-					   [self.VehicleTrimModel.vehicleDynamics.state.pe],	#pe [1]
-					   [self.VehicleTrimModel.vehicleDynamics.state.pd],	#pd [2]
+		x0 = numpy.array([[self.VehicleTrimModel.getVehicleState().pn],	#pn [0]
+					   [self.VehicleTrimModel.getVehicleState().pe],	#pe [1]
+					   [self.VehicleTrimModel.getVehicleState().pd],	#pd [2]
 					   [Vastar],											#u	[3]
 					   [0.0],												#v	[4]
 					   [0.0],												#w	[5]
@@ -169,10 +169,10 @@ class VehicleTrim():
 					   constraints=cons, options={'ftol': 1e-10, 'disp': False})
 		self.MapArraytoClass(res.x)
 		# replace parts of state with initial values
-		self.VehicleTrimModel.vehicleDynamics.state.pn = VPC.InitialNorthPosition
-		self.VehicleTrimModel.vehicleDynamics.state.pe = VPC.InitialEastPosition
-		self.VehicleTrimModel.vehicleDynamics.state.pd = VPC.InitialDownPosition
-		self.VehicleTrimModel.vehicleDynamics.state.yaw = VPC.InitialYawAngle
+		self.VehicleTrimModel.getVehicleState().pn = VPC.InitialNorthPosition
+		self.VehicleTrimModel.getVehicleState().pe = VPC.InitialEastPosition
+		self.VehicleTrimModel.getVehicleState().pd = VPC.InitialDownPosition
+		self.VehicleTrimModel.getVehicleState().yaw = VPC.InitialYawAngle
 		# check input limits
 		if any([self.ControlTrim.Throttle < VPC.minControls.Throttle,
 				self.ControlTrim.Aileron < VPC.minControls.Aileron,
@@ -198,22 +198,24 @@ class VehicleTrim():
 		"""
 		# objective function to be minimized
 		self.MapArraytoClass(x)
-		Faero = self.VehicleTrimModel.updateForces(self.VehicleTrimModel.vehicleDynamics.state,
-										   self.VehicleTrimModel.windModel.Wind,
-										   self.ControlTrim)
-		self.VehicleTrimModel.vehicleDynamics.dot = self.VehicleTrimModel.vehicleDynamics.derivative(self.VehicleTrimModel.vehicleDynamics.state, Faero)
+		Faero = self.VehicleTrimModel.updateForces(self.VehicleTrimModel.getVehicleState(),
+							   self.ControlTrim,
+							   wind = self.VehicleTrimModel.getWindModel().getWind())
+		dot = self.VehicleTrimModel.getVehicleDynamicsModel().derivative(
+			self.VehicleTrimModel.getVehicleState(), Faero)
+		self.VehicleTrimModel.getVehicleDynamicsModel().setVehicleDerivative(dot)
 		xdotstar_pd = -Vastar * math.sin(Gammastar)
 		xdotstar_yaw = Vastar * Kappastar * math.cos(Gammastar)
-		J = math.hypot(self.VehicleTrimModel.vehicleDynamics.dot.pd - xdotstar_pd,
-					   self.VehicleTrimModel.vehicleDynamics.dot.u,
-					   self.VehicleTrimModel.vehicleDynamics.dot.v,
-					   self.VehicleTrimModel.vehicleDynamics.dot.w,
-					   self.VehicleTrimModel.vehicleDynamics.dot.roll,
-					   self.VehicleTrimModel.vehicleDynamics.dot.pitch,
-					   self.VehicleTrimModel.vehicleDynamics.dot.yaw - xdotstar_yaw,
-					   self.VehicleTrimModel.vehicleDynamics.dot.p,
-					   self.VehicleTrimModel.vehicleDynamics.dot.q,
-					   self.VehicleTrimModel.vehicleDynamics.dot.r)
+		J = math.hypot(dot.pd - xdotstar_pd,
+					   dot.u,
+					   dot.v,
+					   dot.w,
+					   dot.roll,
+					   dot.pitch,
+					   dot.yaw - xdotstar_yaw,
+					   dot.p,
+					   dot.q,
+					   dot.r)
 		return J ** 2
 
 	def MapArraytoClass(self, x):
@@ -224,26 +226,26 @@ class VehicleTrim():
 		:param x: state + input vector (numpy array)
 		:return: none
 		"""
-		self.VehicleTrimModel.vehicleDynamics.state.pn = x.item(0)
-		self.VehicleTrimModel.vehicleDynamics.state.pe = x.item(1)
-		self.VehicleTrimModel.vehicleDynamics.state.pd = x.item(2)
-		self.VehicleTrimModel.vehicleDynamics.state.u = x.item(3)
-		self.VehicleTrimModel.vehicleDynamics.state.v = x.item(4)
-		self.VehicleTrimModel.vehicleDynamics.state.w = x.item(5)
-		self.VehicleTrimModel.vehicleDynamics.state.yaw = x.item(6)
-		self.VehicleTrimModel.vehicleDynamics.state.pitch = x.item(7)
-		self.VehicleTrimModel.vehicleDynamics.state.roll = x.item(8)
-		self.VehicleTrimModel.vehicleDynamics.state.R = \
-			Rotations.euler2DCM(self.VehicleTrimModel.vehicleDynamics.state.yaw,
-								self.VehicleTrimModel.vehicleDynamics.state.pitch,
-								self.VehicleTrimModel.vehicleDynamics.state.roll)
-		self.VehicleTrimModel.vehicleDynamics.state.p = x.item(9)
-		self.VehicleTrimModel.vehicleDynamics.state.q = x.item(10)
-		self.VehicleTrimModel.vehicleDynamics.state.r = x.item(11)
+		self.VehicleTrimModel.getVehicleState().pn = x.item(0)
+		self.VehicleTrimModel.getVehicleState().pe = x.item(1)
+		self.VehicleTrimModel.getVehicleState().pd = x.item(2)
+		self.VehicleTrimModel.getVehicleState().u = x.item(3)
+		self.VehicleTrimModel.getVehicleState().v = x.item(4)
+		self.VehicleTrimModel.getVehicleState().w = x.item(5)
+		self.VehicleTrimModel.getVehicleState().yaw = x.item(6)
+		self.VehicleTrimModel.getVehicleState().pitch = x.item(7)
+		self.VehicleTrimModel.getVehicleState().roll = x.item(8)
+		self.VehicleTrimModel.getVehicleState().R = \
+			Rotations.euler2DCM(self.VehicleTrimModel.getVehicleState().yaw,
+								self.VehicleTrimModel.getVehicleState().pitch,
+								self.VehicleTrimModel.getVehicleState().roll)
+		self.VehicleTrimModel.getVehicleState().p = x.item(9)
+		self.VehicleTrimModel.getVehicleState().q = x.item(10)
+		self.VehicleTrimModel.getVehicleState().r = x.item(11)
 
-		self.VehicleTrimModel.vehicleDynamics.state.Va = math.hypot(x.item(3), x.item(4), x.item(5))  # Airspeed
-		self.VehicleTrimModel.vehicleDynamics.state.alpha = math.atan2(x.item(5), x.item(3))  # angle of attack
-		self.VehicleTrimModel.vehicleDynamics.state.beta = math.atan2(x.item(4), x.item(3))  # sideslip angle
+		self.VehicleTrimModel.getVehicleState().Va = math.hypot(x.item(3), x.item(4), x.item(5))  # Airspeed
+		self.VehicleTrimModel.getVehicleState().alpha = math.atan2(x.item(5), x.item(3))  # angle of attack
+		self.VehicleTrimModel.getVehicleState().beta = math.atan2(x.item(4), x.item(3))  # sideslip angle
 
 		self.ControlTrim.Throttle = x.item(12)
 		self.ControlTrim.Aileron = x.item(13)
@@ -290,13 +292,13 @@ class VehicleTrim():
 
 		p0 = points[0]
 
-		points = MatrixMath.matrixOffset(points, self.VehicleTrimModel.vehicleDynamics.state.pn - p0[0],
-										 self.VehicleTrimModel.vehicleDynamics.state.pe - p0[1],
-										 self.VehicleTrimModel.vehicleDynamics.state.pd - p0[2])
-		cos_psi = math.cos(self.VehicleTrimModel.vehicleDynamics.state.yaw)
-		sin_psi = math.sin(self.VehicleTrimModel.vehicleDynamics.state.yaw)
+		points = MatrixMath.offset(points, self.VehicleTrimModel.getVehicleState().pn - p0[0],
+										 self.VehicleTrimModel.getVehicleState().pe - p0[1],
+										 self.VehicleTrimModel.getVehicleState().pd - p0[2])
+		cos_psi = math.cos(self.VehicleTrimModel.getVehicleState().yaw)
+		sin_psi = math.sin(self.VehicleTrimModel.getVehicleState().yaw)
 		R_psi = [[cos_psi, sin_psi, 0],[-sin_psi, cos_psi, 0],[0, 0, 1]]
-		points = MatrixMath.matrixMultiply(points,R_psi)
+		points = MatrixMath.multiply(points,R_psi)
 		points = Rotations.ned2enu(points)
 		return points
 
@@ -315,20 +317,20 @@ class VehicleTrim():
 		"""
 		errorState = States.vehicleState()
 		Rstar = 1.0 / Kappastar
-		AlphaStar = math.atan2(self.VehicleTrimModel.vehicleDynamics.state.w, self.VehicleTrimModel.vehicleDynamics.state.u)
+		AlphaStar = math.atan2(self.VehicleTrimModel.getVehicleState().w, self.VehicleTrimModel.getVehicleState().u)
 		straightFlag = any([math.isclose(Kappastar, 0.0), math.fabs(Kappastar) < (1.0 / VPC.RstarMax)])
 
 		if straightFlag:
 			Betastar = 0.0
 			Phistar = 0.0
 		else:
-			Betastar = math.atan2(self.VehicleTrimModel.vehicleDynamics.state.v, self.VehicleTrimModel.vehicleDynamics.state.u)
+			Betastar = math.atan2(self.VehicleTrimModel.getVehicleState().v, self.VehicleTrimModel.getVehicleState().u)
 			Phistar = math.atan2(Vastar ** 2 * math.cos(Gammastar) * Kappastar, VPC.g0)
 
-		self.VehicleTrimModel.vehicleDynamics.state.alpha = AlphaStar
-		self.VehicleTrimModel.vehicleDynamics.state.beta = Betastar
-		self.VehicleTrimModel.vehicleDynamics.state.Va = Vastar
-		self.VehicleTrimModel.vehicleDynamics.state.roll = Phistar
+		self.VehicleTrimModel.getVehicleState().alpha = AlphaStar
+		self.VehicleTrimModel.getVehicleState().beta = Betastar
+		self.VehicleTrimModel.getVehicleState().Va = Vastar
+		self.VehicleTrimModel.getVehicleState().roll = Phistar
 
 		ustar = Vastar * math.cos(AlphaStar) * math.cos(Betastar)
 		vstar = Vastar * math.sin(Betastar)
@@ -339,45 +341,45 @@ class VehicleTrim():
 			pstar = 0.0
 			qstar = 0.0
 			rstar = 0.0
-			self.VehicleTrimModel.vehicleDynamics.state.pn += Vastar * math.cos(Gammastar) * \
-															  math.cos(self.VehicleTrimModel.vehicleDynamics.state.yaw) * dT
-			self.VehicleTrimModel.vehicleDynamics.state.pe += Vastar * math.cos(Gammastar) * \
-															  math.sin(self.VehicleTrimModel.vehicleDynamics.state.yaw) * dT
+			self.VehicleTrimModel.getVehicleState().pn += Vastar * math.cos(Gammastar) * \
+															  math.cos(self.VehicleTrimModel.getVehicleState().yaw) * dT
+			self.VehicleTrimModel.getVehicleState().pe += Vastar * math.cos(Gammastar) * \
+															  math.sin(self.VehicleTrimModel.getVehicleState().yaw) * dT
 		else:
 			pstar = -Vastar * Kappastar * math.sin(Thetastar)
 			qstar = Vastar * Kappastar * math.sin(Phistar) * math.cos(Thetastar)
 			rstar = Vastar * Kappastar * math.cos(Phistar) * math.cos(Thetastar)
-			self.VehicleTrimModel.vehicleDynamics.state.yaw += Vastar * Kappastar * math.cos(Gammastar) * dT
-			self.VehicleTrimModel.vehicleDynamics.state.pn = Rstar * math.cos(self.VehicleTrimModel.vehicleDynamics.state.yaw)
-			self.VehicleTrimModel.vehicleDynamics.state.pe = Rstar * math.sin(self.VehicleTrimModel.vehicleDynamics.state.yaw)
+			self.VehicleTrimModel.getVehicleState().yaw += Vastar * Kappastar * math.cos(Gammastar) * dT
+			self.VehicleTrimModel.getVehicleState().pn = Rstar * math.cos(self.VehicleTrimModel.getVehicleState().yaw)
+			self.VehicleTrimModel.getVehicleState().pe = Rstar * math.sin(self.VehicleTrimModel.getVehicleState().yaw)
 
-		self.VehicleTrimModel.vehicleDynamics.state.pd -= Vastar * math.sin(Gammastar) * dT
-		self.VehicleTrimModel.vehicleDynamics.state.u = ustar
-		self.VehicleTrimModel.vehicleDynamics.state.v = vstar
-		self.VehicleTrimModel.vehicleDynamics.state.w = wstar
-		self.VehicleTrimModel.vehicleDynamics.state.pitch = Thetastar
-		self.VehicleTrimModel.vehicleDynamics.state.p = pstar
-		self.VehicleTrimModel.vehicleDynamics.state.q = qstar
-		self.VehicleTrimModel.vehicleDynamics.state.r = rstar
-		self.VehicleTrimModel.vehicleDynamics.state.R = Rotations.euler2DCM(self.VehicleTrimModel.vehicleDynamics.state.yaw,
-																			self.VehicleTrimModel.vehicleDynamics.state.pitch,
-																			self.VehicleTrimModel.vehicleDynamics.state.roll)
+		self.VehicleTrimModel.getVehicleState().pd -= Vastar * math.sin(Gammastar) * dT
+		self.VehicleTrimModel.getVehicleState().u = ustar
+		self.VehicleTrimModel.getVehicleState().v = vstar
+		self.VehicleTrimModel.getVehicleState().w = wstar
+		self.VehicleTrimModel.getVehicleState().pitch = Thetastar
+		self.VehicleTrimModel.getVehicleState().p = pstar
+		self.VehicleTrimModel.getVehicleState().q = qstar
+		self.VehicleTrimModel.getVehicleState().r = rstar
+		self.VehicleTrimModel.getVehicleState().R = Rotations.euler2DCM(self.VehicleTrimModel.getVehicleState().yaw,
+																			self.VehicleTrimModel.getVehicleState().pitch,
+																			self.VehicleTrimModel.getVehicleState().roll)
 
-		errorState.pn = state.pn - self.VehicleTrimModel.vehicleDynamics.state.pn
-		errorState.pe = state.pn - self.VehicleTrimModel.vehicleDynamics.state.pe
-		errorState.pd = state.pn - self.VehicleTrimModel.vehicleDynamics.state.pd
-		errorState.u = state.u - self.VehicleTrimModel.vehicleDynamics.state.u
-		errorState.v = state.v - self.VehicleTrimModel.vehicleDynamics.state.v
-		errorState.w = state.w - self.VehicleTrimModel.vehicleDynamics.state.w
-		errorState.yaw = state.yaw - self.VehicleTrimModel.vehicleDynamics.state.yaw
-		errorState.pitch = state.pitch - self.VehicleTrimModel.vehicleDynamics.state.pitch
-		errorState.roll = state.roll - self.VehicleTrimModel.vehicleDynamics.state.roll
-		errorState.p = state.p - self.VehicleTrimModel.vehicleDynamics.state.p
-		errorState.q = state.q - self.VehicleTrimModel.vehicleDynamics.state.q
-		errorState.r = state.r - self.VehicleTrimModel.vehicleDynamics.state.r
-		errorState.alpha = state.alpha - self.VehicleTrimModel.vehicleDynamics.state.alpha
-		errorState.beta = state.beta - self.VehicleTrimModel.vehicleDynamics.state.beta
-		errorState.R = MatrixMath.matrixSubtract(state.R, self.VehicleTrimModel.vehicleDynamics.state.R)
+		errorState.pn = state.pn - self.VehicleTrimModel.getVehicleState().pn
+		errorState.pe = state.pn - self.VehicleTrimModel.getVehicleState().pe
+		errorState.pd = state.pn - self.VehicleTrimModel.getVehicleState().pd
+		errorState.u = state.u - self.VehicleTrimModel.getVehicleState().u
+		errorState.v = state.v - self.VehicleTrimModel.getVehicleState().v
+		errorState.w = state.w - self.VehicleTrimModel.getVehicleState().w
+		errorState.yaw = state.yaw - self.VehicleTrimModel.getVehicleState().yaw
+		errorState.pitch = state.pitch - self.VehicleTrimModel.getVehicleState().pitch
+		errorState.roll = state.roll - self.VehicleTrimModel.getVehicleState().roll
+		errorState.p = state.p - self.VehicleTrimModel.getVehicleState().p
+		errorState.q = state.q - self.VehicleTrimModel.getVehicleState().q
+		errorState.r = state.r - self.VehicleTrimModel.getVehicleState().r
+		errorState.alpha = state.alpha - self.VehicleTrimModel.getVehicleState().alpha
+		errorState.beta = state.beta - self.VehicleTrimModel.getVehicleState().beta
+		errorState.R = MatrixMath.subtract(state.R, self.VehicleTrimModel.getVehicleState().R)
 
 		return errorState
 
