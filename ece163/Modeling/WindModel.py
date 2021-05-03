@@ -85,23 +85,38 @@ class WindModel(dT=0.01, Va=25.0, drydenParamters=drydenParameters(Lu=0.0, Lv=0.
         """
 
         #attributes for Psi, gamma, H for the u component
-        self.Phi_u = math.exp(-Va * dT / drydenParameters.Lu)
-        self.Gamma_u = (drydenParameters.Lu / Va) * (1 - math.exp(-Va * dT / drydenParameters.Lu))
-        self.H_u = sigmau * math.sqrt((2 * Va) / (math.pi * drydenParameters.Lu))
+        if drydenParamters.Lu == 0.0:
+            self.Phi_u = [[1]]
+            self.Gamma_u = [[0]]
+            self.H_u = [[1]]
+        else:
+            self.Phi_u = math.exp(-Va * dT / drydenParameters.Lu)
+            self.Gamma_u = (drydenParameters.Lu / Va) * (1 - math.exp(-Va * dT / drydenParameters.Lu))
+            self.H_u = sigmau * math.sqrt((2 * Va) / (math.pi * drydenParameters.Lu))
 
         # attributes for Psi, gamma, H for the v component
-        self.Phi_v = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParameters.Lv), [[1 - (Va * dT / drydenParameters.Lv), - ((Va / drydenParameters.Lv)**2) * dT],
+        if drydenParamters.Lv == 0.0:
+            self.Phi_v = [[1, 0], [0, 1]]
+            self.Gamma_v = [[0], [0]]
+            self.H_v = [[1, 1]]
+        else:
+            self.Phi_v = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParameters.Lv), [[1 - (Va * dT / drydenParameters.Lv), - ((Va / drydenParameters.Lv)**2) * dT],
                                                                        [dT, 1 + ((Va / drydenParameters.Lv) * dT)]])
-        self.Gamma_v = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParameters.Lv), [[dT],
+            self.Gamma_v = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParameters.Lv), [[dT],
                                                                          [((drydenParameters.Lv / Va)**2) * (math.exp(Va * dT/drydenParameters.Lv) - 1)]])
-        self.H_v = mm.matrixScalarMultiply(drydenParameters.sigmav * math.sqrt((3 * Va) / (math.pi * drydenParameters.Lv)), [[1, Va/(math.sqrt(3) * drydenParameters.Lv)]])
+            self.H_v = mm.matrixScalarMultiply(drydenParameters.sigmav * math.sqrt((3 * Va) / (math.pi * drydenParameters.Lv)), [[1, Va/(math.sqrt(3) * drydenParameters.Lv)]])
 
         # attributes for Psi, gamma, H for the w component
-        self.Phi_w =mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParameters.Lw), [[1 - (Va * dT / drydenParameters.Lw), - ((Va / drydenParameters.Lw)**2) * dT],
+        if drydenParamters.Lw == 0.0:
+            self.Phi_w = [[1, 0], [0, 1]]
+            self.Gamma_w = [[0], [0]]
+            self.H_w = [[1, 1]]
+        else:
+            self.Phi_w =mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParameters.Lw), [[1 - (Va * dT / drydenParameters.Lw), - ((Va / drydenParameters.Lw)**2) * dT],
                                                                       [dT, 1 + ((Va / drydenParameters.Lw) * dT)]])
-        self.Gamma_w = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParameters.Lw), [[dT],
+            self.Gamma_w = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParameters.Lw), [[dT],
                                                                          [((drydenParameters.Lw / Va)**2) * (math.exp(Va * dT/drydenParameters.Lw) - 1)]])
-        self.H_w = mm.matrixScalarMultiply(sigmaw * math.sqrt((3 * Va) / (math.pi * drydenParameters.Lw)), [[1, Va/(math.sqrt(3) * drydenParameters.Lv)]])
+            self.H_w = mm.matrixScalarMultiply(sigmaw * math.sqrt((3 * Va) / (math.pi * drydenParameters.Lw)), [[1, Va/(math.sqrt(3) * drydenParameters.Lv)]])
 
         return
 
