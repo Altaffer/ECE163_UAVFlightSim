@@ -6,6 +6,7 @@ from ..Modeling import WindModel
 from ..Utilities import MatrixMath as mm
 from ..Utilities import Rotations
 from ..Constants import VehiclePhysicalConstants as VPC
+from ..Modeling import WindModel as WM
 
 """ Author: Luca Altaffer (taltaffe@ucsc.edu)
 This module is where all of the vehicle dynamics are computed for the simulation. It includes the kinematics of both the
@@ -19,13 +20,15 @@ class VehicleAerodynamicsModel():
         self.initialSpeed = initialSpeed
         self.initialHeight = initialHeight
         self.vehicleDynamicsModel = VDM.VehicleDynamicsModel()
+        self.WindModel = WM.WindModel()
         return
 
     def reset(self):
         """Reset the Vehicle state to initial conditions"""
         self.initialSpeed = VPC.InitialSpeed
         self.initialHeight = VPC.InitialDownPosition
-        self.vehicleDynamicsModel = VDM.VehicleDynamicsModel
+        self.vehicleDynamicsModel = VDM.VehicleDynamicsModel()
+        self.WindModel = WM.WindModel()
         return
 
     def Update(self, controls):
@@ -241,6 +244,7 @@ class VehicleAerodynamicsModel():
         Fgravity = self.gravityForces(state)
         Faero = self.aeroForces(state)
         Fcontrols = self.controlForces(state, controls)
+        Fwind = self.CalculateAirspeed(state,wind)
 
         #addings the forces together
         total_forces = Inputs.forcesMoments()
@@ -253,3 +257,57 @@ class VehicleAerodynamicsModel():
 
         return total_forces
 
+    def getWindModel(self):
+        """Wrapper function to return the windModel"""
+        return self.WindModel
+
+    def setWindModel(self, windModel):
+        """Wrapper function to set the windModel"""
+        self.WindModel = windModel
+        return
+
+    def CalculateAirspeed(self,state,wind):
+        """Calculates the total airspeed, as well as ange of attack and side-slip angles from the wind and current state.
+        Needed for further aerodynamic force calculations. Va, wind speed [m/s], alpha, angle of attack [rad], and beta,
+        side-slip angle [rad] are returned from the function. The state must be updated outside this function.
+        """
+
+        #creating tools for the trig functions to make math easier
+        def c(angle):
+            return math.cos(angle)
+
+        def s(angle):
+            return math.sin(angle)
+
+        def t(angle):
+            return math.tan(angle)
+
+        #Defing magnitude steady wind in the inertial frame
+        Ws = [[wind.n], [wind.e], [wind.d]]
+        Wsmag = math.sqrt(wind.n**2 + wind.e**2 + wind.d**2)
+
+        #Defining the azimuth, xw and elevation gw
+        xw = math.atan2(wind.e, wind.n)
+        gw = -math.asin(wind.d/Wsmag)
+
+        #Azimuth Elevation rotation matrix
+        R = [[c(xw) * c(gw), s(xw) * c(gw), -s(xw)], [-s(xw), c(xw), 0], [c(xw) * s(gw), s(xw) * s(gw), c(gw)]]
+
+        #Defining the gust
+        Wg = [[wind.u], [wind.v], [wind.w]]
+        iWg = mm.matrixMultiply(mm.matrixTranspose(R), Wg)
+
+        #wind in the body frame
+        Wb = mm.matrixMultiply(state.R, mm.matrixAdd(Ws, iWg))
+
+        #Calculating the airspeed Va
+        Va = mm.matrixSubtract([[state.u], [state.v], [state.w]], Wb)
+        Vamag = math.sqrt(Va[0][0]**2 + Va[1][0]**2 + Va[2][0]**2)
+
+        #Calculating the angle of attack alpha
+        alpha = math.atan(Va[2][0]/Va[0][0])
+
+        #Calculating the side-slip angle beta
+        beta = math.asin(Va[1][0]/math.sqrt(Va[0][0]**2 + Va[1][0]**2 + Va[2][0]**2))
+
+        return Vamag, alpha, beta
