@@ -163,9 +163,11 @@ class TestManager:
 		if self.mode == "GENERATE":
 			self.results = {}
 		else:
+			ttprint(DEBUG, f"Loading file '{self.picklePath}'...")
 			with open(self.picklePath, 'rb') as f:
 				self.results = pickle.load(f)
-
+			first_tests = [k for k in self.results.keys()][0:3]
+			ttprint(DEBUG, f"loaded {len(self.results)} tests starting with {first_tests}")
 # 		tt.ttprint(tt.DEBUG, f"Results dict is {expected_results_dict}")
 	
 		
@@ -183,7 +185,9 @@ class TestManager:
 				if not re.search(self.tests_to_run, name):
 					return
 			
-			ttprint(DEBUG, f"   Running test {name} with inputs{inputs}...")
+			ttprint(DEBUG, f"   Running test {name} with inputs {inputs}...")
+# 			for k, v in inputs.items():
+# 				ttprint(DEBUG, f"\n    {k:10}:{v}")
 			expected_outputs = self.results[name]
 			
 			#run student code:
@@ -196,6 +200,7 @@ class TestManager:
 				if self.error_skipping:
 					ttprint(DETAIL, str(e))
 					outcome = False
+					err = 999999
 				else:
 					raise e
 			
@@ -212,8 +217,9 @@ class TestManager:
 			
 			if name in self.results.keys():
 				raise Exception(f"Key '{name}' is already in results dict!  Instances of Tests or Test children need unique names.")
-				
-			ttprint(DEBUG, f"   Generating test {name} with inputs{inputs}...")
+			ttprint(DEBUG, f"   Running test {name} with inputs:")
+			for k, v in inputs.items():
+				ttprint(DEBUG, f"    {k:10}:{v}")
 			outputs = procedure(inputs)
 			ttprint(DEBUG, f"      Got outputs {outputs}")
 			self.results[name] = outputs
