@@ -28,8 +28,8 @@ def CreateTransferFunction(trimState, trimInputs):
     tF.phi_trim = trimState.phi
 
     #setting the other variables to the transferFunctions
-    tF.a_phi1 = -0.5 * VPC.rho * (trimState.Va**2) * VPC.S * VPC.b * VPC.Cpp * (VPC.b/(2 * trimState.Va))
-    tF.a_phi2 = 0.5 * VPC.rho * (trimState.Va**2) * VPC.S * VPC.b * VPC.CpdeltaA
+    tF.a_phi1 = -(1/2) * VPC.rho * (trimState.Va**2) * VPC.S * VPC.b * VPC.Cpp * (VPC.b/(2 * trimState.Va))
+    tF.a_phi2 = (1/2) * VPC.rho * (trimState.Va**2) * VPC.S * VPC.b * VPC.CpdeltaA
     tF.a_beta1 = -(VPC.rho * trimState.Va * VPC.S * VPC.CYbeta)/(2 * VPC.mass)
     tF.a_beta2 = (VPC.rho * trimState.Va * VPC.S * VPC.CYdeltaR)/(2 * VPC.mass)
     tF.a_theta1 = -((VPC.rho * (trimState.Va**2) * VPC.c * VPC.S * VPC.CMq)/(2 * VPC.Jyy)) * (VPC.c/(2 * trimState.Va))
@@ -50,8 +50,8 @@ def dThrust_dThrottle(Va, Throttle, epsilon=0.01):
 
     #creating instance of VehicleAerodynamicsModel and CalculatePropForces
     am = VAM.VehicleAerodynamicsModel()
-    Fp1, Mp1 = am.CalculatePropForces(Throttle + epsilon, Va)
-    Fp2, Mp2 = am.CalculatePropForces(Throttle, Va)
+    Fp1, Mp1 = am.CalculatePropForces(Va, Throttle + epsilon)
+    Fp2, Mp2 = am.CalculatePropForces(Va, Throttle)
 
     #Calculating the derivative
     dTdDeltaT = (Fp1 - Fp2)/epsilon
@@ -63,8 +63,8 @@ def dThrust_dVa(Va, Throttle, epsilon=0.5):
     VehicleAerodynamicsModel class)
     """
     am = VAM.VehicleAerodynamicsModel()
-    Fp1, Mp1 = am.CalculatePropForces(Throttle, Va + epsilon)
-    Fp2, Mp2 = am.CalculatePropForces(Throttle, Va)
+    Fp1, Mp1 = am.CalculatePropForces(Va + epsilon, Throttle)
+    Fp2, Mp2 = am.CalculatePropForces(Va, Throttle)
 
     # Calculating the derivative
     dTdVa = (Fp1 - Fp2)/epsilon
