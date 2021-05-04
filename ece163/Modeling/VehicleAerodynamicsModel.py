@@ -37,8 +37,11 @@ class VehicleAerodynamicsModel():
         VehicleDynamicsModel class as well as the windState internally. The Wind and the vehicleState are maintained
         internally."""
 
+        #Update windModel Attribute
+        self.WindModel.Update()
+
         #getting forcesMoments from updateForces
-        forcesMoments = self.updateForces(self.vehicleDynamicsModel.state, controls)
+        forcesMoments = self.updateForces(self.vehicleDynamicsModel.state, controls, self.WindModel.windState)
 
         #Putting forcesMoments into update
         self.vehicleDynamicsModel.Update(forcesMoments)
@@ -61,7 +64,7 @@ class VehicleAerodynamicsModel():
         """Function to project gravity forces into the body frame. Uses the gravity constant g0 from physical constants
         and the vehicle mass. Fg = m * R * [0 0 g0]’"""
         gravity = Inputs.forcesMoments(state)
-        fg = mm.matrixMultiply(mm.matrixScalarMultiply(VPC.mass, state.R),[[0],[0],[VPC.g0]])
+        fg = mm.multiply(mm.scalarMultiply(VPC.mass, state.R),[[0],[0],[VPC.g0]])
         gravity.Fx = fg[0][0]
         gravity.Fy = fg[1][0]
         gravity.Fz = fg[2][0]
@@ -227,30 +230,29 @@ class VehicleAerodynamicsModel():
 
         return Fp, Mp
 
-    def updateForces(self, state, controls, wind=None):
+    def updateForces(self, state, controls, wind):
         """Function to update all of the aerodynamic, propulsive, and gravity forces and moments. All calculations
         required to update the forces are included. state is updated with new values for airspeed, angle of attack, and
         sideslip angles (see class definition for members)"""
 
         #using the definintion from States.py to find Va, alpha, and beta
-        if wind == None:
-            state.Va = math.hypot(state.u, state.v, state.w)  # Airspeed
-            state.alpha = math.atan2(state.w, state.u)  # angle of attack
-            if math.isclose(state.Va, 0.0):  # Sideslip Angle, no airspeed
-                state.beta = 0.0
-            else:
-                state.beta = math.asin(state.v / state.Va)  # Sideslip Angle, normal definition
-        else:
-            Vamag, alpha, beta = self.CalculateAirspeed(state, wind)
-            state.Va = Vamag
-            state.alpha = alpha
-            state.beta = beta
+        #if wind == None:
+          #  state.Va = math.hypot(state.u, state.v, state.w)  # Airspeed
+            #state.alpha = math.atan2(state.w, state.u)  # angle of attack
+            #if math.isclose(state.Va, 0.0):  # Sideslip Angle, no airspeed
+              #  state.beta = 0.0
+            #else:
+                #state.beta = math.asin(state.v / state.Va)  # Sideslip Angle, normal definition
+        #else:
+        Vamag, alpha, beta = self.CalculateAirspeed(state, wind)
+        state.Va = Vamag
+        state.alpha = alpha
+        state.beta = beta
 
         #Recalling the functions defined
         Fgravity = self.gravityForces(state)
         Faero = self.aeroForces(state)
         Fcontrols = self.controlForces(state, controls)
-        Fwind = self.CalculateAirspeed(state,wind)
 
         #addings the forces together
         total_forces = Inputs.forcesMoments()
@@ -272,7 +274,7 @@ class VehicleAerodynamicsModel():
         self.WindModel = windModel
         return
 
-    def CalculateAirspeed(self,state,wind):
+    def CalculateAirspeed(self,state, wind):
         """Calculates the total airspeed, as well as ange of attack and side-slip angles from the wind and current state.
         Needed for further aerodynamic force calculations. Va, wind speed [m/s], alpha, angle of attack [rad], and beta,
         side-slip angle [rad] are returned from the function. The state must be updated outside this function.
@@ -289,31 +291,37 @@ class VehicleAerodynamicsModel():
             return math.tan(angle)
 
         #Defing magnitude steady wind in the inertial frame
-        Ws = [[wind.n], [wind.e], [wind.d]]
-        Wsmag = math.sqrt(wind.n**2 + wind.e**2 + wind.d**2)
+        Ws = [[wind.Wn], [wind.We], [wind.Wd]]
+        Wsmag = math.sqrt((wind.Wn**2) + (wind.We**2) + (wind.Wd**2))
 
         #Defining the azimuth, xw and elevation gw
-        xw = math.atan2(wind.e, wind.n)
-        gw = -math.asin(wind.d/Wsmag)
+        xw = math.atan2(wind.We, wind.Wn)
+        if Wsmag == 0:
+            gw = -math.asin(0)
+        else:
+            gw = -math.asin(wind.Wd/Wsmag)
 
         #Azimuth Elevation rotation matrix
-        R = [[c(xw) * c(gw), s(xw) * c(gw), -s(xw)], [-s(xw), c(xw), 0], [c(xw) * s(gw), s(xw) * s(gw), c(gw)]]
+        R = [[c(xw) * c(gw), s(xw) * c(gw), -s(gw)], [-s(xw), c(xw), 0], [c(xw) * s(gw), s(xw) * s(gw), c(gw)]]
 
         #Defining the gust
-        Wg = [[wind.u], [wind.v], [wind.w]]
-        iWg = mm.matrixMultiply(mm.matrixTranspose(R), Wg)
+        Wg = [[wind.Wu], [wind.Wv], [wind.Ww]]
+        iWg = mm.multiply(mm.transpose(R), Wg)
 
         #wind in the body frame
-        Wb = mm.matrixMultiply(state.R, mm.matrixAdd(Ws, iWg))
+        Wb = mm.multiply(state.R, mm.add(Ws, iWg))
 
         #Calculating the airspeed Va
-        Va = mm.matrixSubtract([[state.u], [state.v], [state.w]], Wb)
-        Vamag = math.sqrt(Va[0][0]**2 + Va[1][0]**2 + Va[2][0]**2)
+        Va = mm.subtract([[state.u], [state.v], [state.w]], Wb)
+        Vamag = math.sqrt((Va[0][0]**2) + (Va[1][0]**2) + (Va[2][0]**2))
 
         #Calculating the angle of attack alpha
-        alpha = math.atan(Va[2][0]/Va[0][0])
+        alpha = math.atan2(Va[2][0], Va[0][0])
 
         #Calculating the side-slip angle beta
-        beta = math.asin(Va[1][0]/math.sqrt(Va[0][0]**2 + Va[1][0]**2 + Va[2][0]**2))
+        if Vamag == 0:
+            beta = math.asin(0)
+        else:
+            beta = math.asin(Va[1][0]/Vamag)
 
         return Vamag, alpha, beta

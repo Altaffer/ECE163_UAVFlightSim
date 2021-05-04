@@ -134,8 +134,8 @@ class VehicleGeometry():
 		
 		#student code goes here
 		newppoints = (r.euler2DCM(yaw, pitch, roll))
-		transpose = mm.matrixTranspose(newppoints)
-		newPointsInertial = mm.matrixMultiply(newPoints, transpose)
+		transpose = mm.transpose(newppoints)
+		newPointsInertial = mm.multiply(newPoints, transpose)
 		newPointsEnu = r.ned2enu(newPointsInertial)
-		newPoints = mm.matrixOffset(newPointsEnu,y,x,-z)
+		newPoints = mm.offset(newPointsEnu,y,x,-z)
 		return newPoints

@@ -38,7 +38,7 @@ Jxz = 0.1204  # [kg m^2]
 
 Jbody = [[Jxx, 0., -Jxz], [0., Jyy, 0.], [-Jxz, 0., Jzz]]
 Jdet = (Jxx * Jzz - Jxz ** 2)
-JinvBody = MatrixMath.matrixScalarMultiply(1. / Jdet, [[Jzz, 0., Jxz], [0., Jdet / Jyy, 0.], [Jxz, 0., Jxx]])
+JinvBody = MatrixMath.scalarMultiply(1. / Jdet, [[Jzz, 0., Jxz], [0., Jdet / Jyy, 0.], [Jxz, 0., Jxx]])
 
 Gamma1 = (Jxx - Jyy + Jzz)* JinvBody[0][2]
 Gamma2 = (Jzz * (Jzz - Jyy) + Jxz ** 2) / Jdet
@@ -133,7 +133,7 @@ CrdeltaA = JinvBody[0][2] * CldeltaA + JinvBody[2][2] * CndeltaA
 CrdeltaR = JinvBody[0][2] * CldeltaR + JinvBody[2][2] * CndeltaR
 
 # rudder and aileron trim matrix
-CprdeltaARinv = MatrixMath.matrixScalarMultiply(1.0 / (CpdeltaA * CrdeltaR - CpdeltaR * CrdeltaA), [[CrdeltaR, -CpdeltaR],
+CprdeltaARinv = MatrixMath.scalarMultiply(1.0 / (CpdeltaA * CrdeltaR - CpdeltaR * CrdeltaA), [[CrdeltaR, -CpdeltaR],
 																									[-CrdeltaA, CpdeltaA]])
 
 # Dyden Wind Gust Model Coefficients

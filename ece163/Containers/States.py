@@ -56,7 +56,7 @@ class vehicleState:
             self.beta = 0.0
         else:
             self.beta = math.asin(self.v/self.Va)       # Sideslip Angle, normal definition
-        pdotned = MatrixMath.matrixMultiply(MatrixMath.matrixTranspose(self.R),[[self.u],[self.v],[self.w]])
+        pdotned = MatrixMath.multiply(MatrixMath.transpose(self.R),[[self.u],[self.v],[self.w]])
         self.chi = math.atan2(pdotned[1][0],pdotned[0][0])
         return
 

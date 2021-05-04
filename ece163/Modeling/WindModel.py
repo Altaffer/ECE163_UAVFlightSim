@@ -51,9 +51,9 @@ class WindModel():
         """
         self.dT = VPC.dT
         self.Va = VPC.InitialSpeed
-        self.drydenParameters = drydenParameter(Lu=0.0, Lv=0.0, Lw=0.0, sigmau=0.0, sigmav=0.0, sigmaw=0.0)
+        self.drydenParamters = VPC.DrydenNoWind
         self.windState = States.windState()
-        CreateDrydenTransferFns(self, self.dT, self.Va, self.drydenParameters)
+        #self.CreateDrydenTransferFns(self, self.dT, self.Va, self.drydenParamters)
         return
 
     def setWind(self, windState):
@@ -100,11 +100,11 @@ class WindModel():
             self.Gamma_v = [[0], [0]]
             self.H_v = [[1, 1]]
         else:
-            self.Phi_v = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParamters.Lv), [[1 - (Va * dT / drydenParamters.Lv), - ((Va / drydenParamters.Lv)**2) * dT],
+            self.Phi_v = mm.scalarMultiply(math.exp(-Va * dT / drydenParamters.Lv), [[1 - (Va * dT / drydenParamters.Lv), - ((Va / drydenParamters.Lv)**2) * dT],
                                                                        [dT, 1 + ((Va / drydenParamters.Lv) * dT)]])
-            self.Gamma_v = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParamters.Lv), [[dT],
+            self.Gamma_v = mm.scalarMultiply(math.exp(-Va * dT / drydenParamters.Lv), [[dT],
                                                                          [((drydenParamters.Lv / Va)**2) * (math.exp(Va * dT/drydenParamters.Lv) - 1) - ((drydenParamters.Lv * dT)/Va)]])
-            self.H_v = mm.matrixScalarMultiply(drydenParamters.sigmav * math.sqrt((3 * Va) / (math.pi * drydenParamters.Lv)), [[1, Va/(math.sqrt(3) * drydenParamters.Lv)]])
+            self.H_v = mm.scalarMultiply(drydenParamters.sigmav * math.sqrt((3 * Va) / (math.pi * drydenParamters.Lv)), [[1, Va/(math.sqrt(3) * drydenParamters.Lv)]])
 
         # attributes for Psi, gamma, H for the w component
         if drydenParamters.Lw == 0.0:
@@ -112,11 +112,11 @@ class WindModel():
             self.Gamma_w = [[0], [0]]
             self.H_w = [[1, 1]]
         else:
-            self.Phi_w =mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParamters.Lw), [[1 - (Va * dT / drydenParamters.Lw), - ((Va / drydenParamters.Lw)**2) * dT],
+            self.Phi_w =mm.scalarMultiply(math.exp(-Va * dT / drydenParamters.Lw), [[1 - (Va * dT / drydenParamters.Lw), - ((Va / drydenParamters.Lw)**2) * dT],
                                                                       [dT, 1 + ((Va / drydenParamters.Lw) * dT)]])
-            self.Gamma_w = mm.matrixScalarMultiply(math.exp(-Va * dT / drydenParamters.Lw), [[dT],
+            self.Gamma_w = mm.scalarMultiply(math.exp(-Va * dT / drydenParamters.Lw), [[dT],
                                                                          [((drydenParamters.Lw / Va)**2) * (math.exp(Va * dT/drydenParamters.Lw) - 1) - ((drydenParamters.Lw * dT)/Va)]])
-            self.H_w = mm.matrixScalarMultiply(drydenParamters.sigmaw * math.sqrt((3 * Va) / (math.pi * drydenParamters.Lw)), [[1, Va/(math.sqrt(3) * drydenParamters.Lw)]])
+            self.H_w = mm.scalarMultiply(drydenParamters.sigmaw * math.sqrt((3 * Va) / (math.pi * drydenParamters.Lw)), [[1, Va/(math.sqrt(3) * drydenParamters.Lw)]])
 
         return
 
@@ -144,13 +144,15 @@ class WindModel():
             uw = random.gauss(0, 1)
 
         #Euler step for x
-        self.x_u = mm.matrixAdd(mm.matrixMultiply(self.Phi_u, self.x_u),mm.matrixScalarMultiply(uu, self.Gamma_u))
-        self.x_v = mm.matrixAdd(mm.matrixMultiply(self.Phi_v, self.x_v),mm.matrixScalarMultiply(uv, self.Gamma_v))
-        self.x_w = mm.matrixAdd(mm.matrixMultiply(self.Phi_w, self.x_w),mm.matrixScalarMultiply(uw, self.Gamma_w))
+        self.x_u = mm.add(mm.multiply(self.Phi_u, self.x_u),mm.scalarMultiply(uu, self.Gamma_u))
+        self.x_v = mm.add(mm.multiply(self.Phi_v, self.x_v),mm.scalarMultiply(uv, self.Gamma_v))
+        self.x_w = mm.add(mm.multiply(self.Phi_w, self.x_w),mm.scalarMultiply(uw, self.Gamma_w))
 
         #Gusts from state
-        self.CreateDrydenTransferFns(self.dT, self.Va, self.drydenParamters)
-        self.windState.Wu = self.H_u
-        self.windState.Wv = self.H_v
-        self.windState.Ww = self.H_w
+        self.windState.Wu = mm.multiply(self.H_u, self.x_u)[0][0]
+        self.windState.Wv = mm.multiply(self.H_v, self.x_v)[0][0]
+        self.windState.Ww = mm.multiply(self.H_w, self.x_w)[0][0]
+        self.windState.Wn = self.Wn
+        self.windState.We = self.We
+        self.windState.Wd = self.Wd
         return

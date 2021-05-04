@@ -37,5 +37,5 @@ def ned2enu(points):
     - use the rotation matrix previously define to rotate given ned point to enu
     """
     rot_n2e = [[0,1,0], [1,0,0], [0,0,-1]]
-    enu = mm.matrixMultiply(points,rot_n2e)
+    enu = mm.multiply(points,rot_n2e)
     return enu

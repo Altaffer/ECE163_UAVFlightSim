@@ -62,27 +62,27 @@ class VehicleDynamicsModel():
             sin = math.sin(magw*dT)/magw
             cos = (1-math.cos(magw*dT))/(magw**2)
             I = ([[1,0,0],[0,1,0],[0,0,1]])
-            Rexp = mm.matrixAdd(mm.matrixSubtract(I, mm.matrixScalarMultiply(sin,omegax)),mm.matrixScalarMultiply(cos,mm.matrixMultiply(omegax,omegax)))
+            Rexp = mm.add(mm.subtract(I, mm.scalarMultiply(sin,omegax)),mm.scalarMultiply(cos,mm.multiply(omegax,omegax)))
             return Rexp
         else:
             sin = dT-(((dT**3)*(magw**2))/6)+(((dT**5)*(magw**4))/120)
             cos = (((dT**2)/2)-(((dT**4)*(magw**2)/24)+(((dT**6)*(magw**4)/720))))
             I = ([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-            Rexp2 = mm.matrixAdd((mm.matrixSubtract(I, mm.matrixScalarMultiply(sin,omegax))),mm.matrixScalarMultiply(cos,mm.matrixMultiply(omegax,omegax)))
+            Rexp2 = mm.add((mm.subtract(I, mm.scalarMultiply(sin,omegax))),mm.scalarMultiply(cos,mm.multiply(omegax,omegax)))
             return Rexp2
 
     def derivative(self, state, forcesMoments):
         dot = States.vehicleState()
         #derivatives of pn, pe, pd
-        p = mm.matrixMultiply(mm.matrixTranspose((state.R)),
-                              mm.matrixTranspose([[state.u, state.v, state.w]]))
+        p = mm.multiply(mm.transpose((state.R)),
+                              mm.transpose([[state.u, state.v, state.w]]))
         dot.pn = p[0][0]
         dot.pe = p[1][0]
         dot.pd = p[2][0]
         #derivatives of u, v, and w
         wx_neg = [[0, -state.r, (state.q)], [(state.r), 0, -state.p], [-state.q, (state.p), 0]]
         f = [[forcesMoments.Fx],[forcesMoments.Fy],[forcesMoments.Fz]]
-        v = mm.matrixSubtract(mm.matrixScalarMultiply(1/VPC.mass,f),mm.matrixMultiply(wx_neg,([[state.u],[state.v],[state.w]])))
+        v = mm.subtract(mm.scalarMultiply(1/VPC.mass,f),mm.multiply(wx_neg,([[state.u],[state.v],[state.w]])))
         dot.u = v[0][0]
         dot.v = v[1][0]
         dot.w = v[2][0]
@@ -91,7 +91,7 @@ class VehicleDynamicsModel():
         w = ([[state.p], [state.q], [state.r]])
         C= [[1, s(state.roll)*t(state.pitch), c(state.roll)*t(state.pitch)],[0,  c(state.roll), -s(state.roll)],
             [0, s(state.roll)/c(state.pitch), c(state.roll)/c(state.pitch)]]
-        g = mm.matrixMultiply(C,w)
+        g = mm.multiply(C,w)
         dot.yaw = g[2][0]
         dot.pitch = g[1][0]
         dot.roll = g[0][0]
@@ -99,14 +99,14 @@ class VehicleDynamicsModel():
         #derivatives of p, q, are r
         wx = [[0, -state.r, (state.q)], [(state.r), 0, -state.p], [-state.q, (state.p), 0]]
         M = [[forcesMoments.Mx], [forcesMoments.My], [forcesMoments.Mz]]
-        q = mm.matrixMultiply(VPC.JinvBody, mm.matrixSubtract(M,mm.matrixMultiply(wx,mm.matrixMultiply(VPC.Jbody,w))))
+        q = mm.multiply(VPC.JinvBody, mm.subtract(M,mm.multiply(wx,mm.multiply(VPC.Jbody,w))))
         dot.p = q[0][0]
         dot.q = q[1][0]
         dot.r = q[2][0]
 
         #derivative of the rotation matrix R
         if state.p != 0 and state.q != 0 and state.r != 0:
-            dot.R = mm.matrixMultiply(mm.matrixScalarMultiply(1,wx), state.R)
+            dot.R = mm.multiply(mm.scalarMultiply(1,wx), state.R)
         else:
             dot.R = [[1,0,0],[0,1,0],[0,0,1]]
         return dot
@@ -142,7 +142,7 @@ class VehicleDynamicsModel():
         newState.p = Feuler.p
         newState.q = Feuler.q
         newState.r = Feuler.r
-        newState.R = mm.matrixMultiply(self.Rexp(dT,state,dot), state.R)
+        newState.R = mm.multiply(self.Rexp(dT,state,dot), state.R)
         h = Rotations.dcm2euler(newState.R)
         newState.yaw = h[0]
         newState.pitch = h[1]
