@@ -54,7 +54,7 @@ def dThrust_dThrottle(Va, Throttle, epsilon=0.01):
     Fp2, Mp2 = am.CalculatePropForces(Throttle, Va)
 
     #Calculating the derivative
-    dTdDeltaT = (Mp1 - Mp2)/epsilon
+    dTdDeltaT = (Fp1 - Fp2)/epsilon
     return dTdDeltaT
 
 def dThrust_dVa(Va, Throttle, epsilon=0.5):
@@ -67,5 +67,5 @@ def dThrust_dVa(Va, Throttle, epsilon=0.5):
     Fp2, Mp2 = am.CalculatePropForces(Throttle, Va)
 
     # Calculating the derivative
-    dTdVa = (Mp1 - Mp2)/epsilon
+    dTdVa = (Fp1 - Fp2)/epsilon
     return dTdVa

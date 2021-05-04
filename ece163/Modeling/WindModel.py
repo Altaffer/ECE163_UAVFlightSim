@@ -5,7 +5,7 @@ from ..Utilities import MatrixMath
 from ..Constants import VehiclePhysicalConstants as VPC
 from ..Controls import VehiclePerturbationModels as VPM
 
-class WindModel(dT=0.01, Va=25.0, drydenParamters=drydenParameters(Lu=0.0, Lv=0.0, Lw=0.0, sigmau=0.0, sigmav=0.0, sigmaw=0.0)):
+class WindModel():
     """Implements the Dryden gust model and allows for an update of the wind at every time step when driven by white noise.
     """
 
@@ -39,7 +39,7 @@ class WindModel(dT=0.01, Va=25.0, drydenParamters=drydenParameters(Lu=0.0, Lv=0.
         self.windState = State.windState()
 
         #attribute for xu, xv, xw
-        self.x_u = [[0], [0]]
+        self.x_u = [[0]]
         self.x_v = [[0], [0]]
         self.x_w = [[0], [0]]
 
@@ -90,9 +90,9 @@ class WindModel(dT=0.01, Va=25.0, drydenParamters=drydenParameters(Lu=0.0, Lv=0.
             self.Gamma_u = [[0]]
             self.H_u = [[1]]
         else:
-            self.Phi_u = math.exp(-Va * dT / drydenParameters.Lu)
-            self.Gamma_u = (drydenParameters.Lu / Va) * (1 - math.exp(-Va * dT / drydenParameters.Lu))
-            self.H_u = sigmau * math.sqrt((2 * Va) / (math.pi * drydenParameters.Lu))
+            self.Phi_u = [[math.exp(-Va * dT / drydenParameters.Lu)]]
+            self.Gamma_u = [[(drydenParameters.Lu / Va) * (1 - math.exp(-Va * dT / drydenParameters.Lu))]]
+            self.H_u = [[sigmau * math.sqrt((2 * Va) / (math.pi * drydenParameters.Lu))]]
 
         # attributes for Psi, gamma, H for the v component
         if drydenParamters.Lv == 0.0:

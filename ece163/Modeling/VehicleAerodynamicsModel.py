@@ -233,12 +233,18 @@ class VehicleAerodynamicsModel():
         sideslip angles (see class definition for members)"""
 
         #using the definintion from States.py to find Va, alpha, and beta
-        state.Va = math.hypot(state.u, state.v, state.w)  # Airspeed
-        state.alpha = math.atan2(state.w, state.u)  # angle of attack
-        if math.isclose(state.Va, 0.0):  # Sideslip Angle, no airspeed
-            state.beta = 0.0
+        if wind == None:
+            state.Va = math.hypot(state.u, state.v, state.w)  # Airspeed
+            state.alpha = math.atan2(state.w, state.u)  # angle of attack
+            if math.isclose(state.Va, 0.0):  # Sideslip Angle, no airspeed
+                state.beta = 0.0
+            else:
+                state.beta = math.asin(state.v / state.Va)  # Sideslip Angle, normal definition
         else:
-            state.beta = math.asin(state.v / state.Va)  # Sideslip Angle, normal definition
+            Vamag, alpha, beta = self.CalculateAirspeed(state, wind)
+            state.Va = Vamag
+            state.alpha = alpha
+            state.beta = beta
 
         #Recalling the functions defined
         Fgravity = self.gravityForces(state)
