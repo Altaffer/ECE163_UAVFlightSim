@@ -109,7 +109,11 @@ def deep_compare(name, obs, exp, rel_tol = 0, abs_tol = 0):
 				  for i, (ai, bi) in enumerate(zip(obs,exp))]
 		return all(recursed)
 	except TypeError: #this happens if there's no length, it's our base case
-		passed= math.isclose(obs,exp, abs_tol = abs_tol, rel_tol = rel_tol)
+		try:
+			passed= math.isclose(obs,exp, abs_tol = abs_tol, rel_tol = rel_tol)
+		except Exception as e:
+			e_str = f"error when comparing results for output parameter {name}:  obs={obs}, exp={exp}.   The exception was: {e}"
+			raise Exception(e_str)
 		if passed:
 			ttprint(DEBUG, f"      {name:>10}: exp={exp:>13e} {green}=={white} obs={obs:>13e} ({rel_err(obs,exp):>13e})")
 		else:
@@ -242,7 +246,7 @@ class TestManager:
 			return
 		if not self.mode=="RUN":
 			return
-		ttprint(DETAIL, f"  results for block {self.cur_block_name}")
+		ttprint(DETAIL, f"  results for block {self.cur_block_name}:")
 # 		for name, outcome in self.cur_block_results.items():
 # 			if not outcome:
 # 				ttprint(DETAIL, f"  Failed test {red}{name}{white}")
@@ -278,9 +282,9 @@ class TestManager:
 # 				ttprint(DEBUG, f"      {key}: exp={expected_val} {red}!={white} obs={observed_val}  ")
 				
 		if all(pass_list):
-			return (True, sum(err_list)/len(err_list))
+			return (True, sum(err_list))
 		else:
-			return (False, sum(err_list)/len(err_list))
+			return (False, sum(err_list))
 		
 	def conclude(self):
 		if self.mode == "RUN":
