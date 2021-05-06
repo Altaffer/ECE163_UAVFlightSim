@@ -53,7 +53,7 @@ class WindModel():
         self.Va = VPC.InitialSpeed
         self.drydenParamters = VPC.DrydenNoWind
         self.windState = States.windState()
-        #self.CreateDrydenTransferFns(self, self.dT, self.Va, self.drydenParamters)
+        self.CreateDrydenTransferFns(self.dT, self.Va, self.drydenParamters)
         return
 
     def setWind(self, windState):
@@ -73,9 +73,10 @@ class WindModel():
         inject constant winds and gust parameters into the wind model using the constant wind in the inertial frame
         (steady wind) and gusts that are stochastically derived in the body frame using the Dryden wind gust models.
         """
-        self.Wn = Wn
-        self.We = We
-        self.Wd = Wd
+        self.windState.Wn = Wn
+        self.windState.We = We
+        self.windState.Wd = Wd
+        self.drydenParamters = drydenParamters
         self.CreateDrydenTransferFns(self.dT, VPC.InitialSpeed, drydenParamters)
         return
 
@@ -84,7 +85,6 @@ class WindModel():
         discrete form. These are used in generating the gust models for wind gusts (in wind frame).
         """
 
-        #attributes for Psi, gamma, H for the u component
         if drydenParamters.Lu == 0.0:
             self.Phi_u = [[1]]
             self.Gamma_u = [[0]]
@@ -152,7 +152,4 @@ class WindModel():
         self.windState.Wu = mm.multiply(self.H_u, self.x_u)[0][0]
         self.windState.Wv = mm.multiply(self.H_v, self.x_v)[0][0]
         self.windState.Ww = mm.multiply(self.H_w, self.x_w)[0][0]
-        self.windState.Wn = self.Wn
-        self.windState.We = self.We
-        self.windState.Wd = self.Wd
         return

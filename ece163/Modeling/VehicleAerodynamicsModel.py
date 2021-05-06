@@ -215,7 +215,10 @@ class VehicleAerodynamicsModel():
         a = (VPC.rho * (VPC.D_prop**5) * VPC.C_Q0) / ((2 * math.pi)**2)
         b = ((VPC.rho * (VPC.D_prop**4) * VPC.C_Q1 * Va) / (2 * math.pi)) + ((KT**2)/VPC.R_motor)
         c = (VPC.rho * (VPC.D_prop**3) * VPC.C_Q2 * (Va**2)) - ((KT * Vin)/ VPC.R_motor) + (KT * VPC.i0)
-        omega = (-b + math.sqrt((b**2) - (4 * a * c))) / (2 * a)
+        try:
+            omega = (-b + math.sqrt(b ** 2 - 4 * a * c)) / (2 * a)
+        except:
+            omega = 100.0
 
         #calculating J that depends on Va and omega
         J = (2 * math.pi * Va)/(omega * VPC.D_prop)
@@ -235,15 +238,6 @@ class VehicleAerodynamicsModel():
         required to update the forces are included. state is updated with new values for airspeed, angle of attack, and
         sideslip angles (see class definition for members)"""
 
-        #using the definintion from States.py to find Va, alpha, and beta
-        #if wind == None:
-          #  state.Va = math.hypot(state.u, state.v, state.w)  # Airspeed
-            #state.alpha = math.atan2(state.w, state.u)  # angle of attack
-            #if math.isclose(state.Va, 0.0):  # Sideslip Angle, no airspeed
-              #  state.beta = 0.0
-            #else:
-                #state.beta = math.asin(state.v / state.Va)  # Sideslip Angle, normal definition
-        #else:
         Vamag, alpha, beta = self.CalculateAirspeed(state, wind)
         state.Va = Vamag
         state.alpha = alpha

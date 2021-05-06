@@ -22,10 +22,10 @@ def CreateTransferFunction(trimState, trimInputs):
     #Setting the trimstate values to the transferFunctions
     tF.Va_trim = trimState.Va
     tF.alpha_trim = trimState.alpha
-    tF.beta_trim = trim.State.beta
-    tF.gamma_trim =  trimState.theta - trimState.alpha
-    tF.theta_trim = trimState.theta
-    tF.phi_trim = trimState.phi
+    tF.beta_trim = trimState.beta
+    tF.gamma_trim =  trimState.pitch - trimState.alpha
+    tF.theta_trim = trimState.pitch
+    tF.phi_trim = trimState.roll
 
     #setting the other variables to the transferFunctions
     tF.a_phi1 = -(1/2) * VPC.rho * (trimState.Va**2) * VPC.S * VPC.b * VPC.Cpp * (VPC.b/(2 * trimState.Va))
@@ -35,10 +35,9 @@ def CreateTransferFunction(trimState, trimInputs):
     tF.a_theta1 = -((VPC.rho * (trimState.Va**2) * VPC.c * VPC.S * VPC.CMq)/(2 * VPC.Jyy)) * (VPC.c/(2 * trimState.Va))
     tF.a_theta2 = -((VPC.rho * (trimState.Va**2) * VPC.c * VPC.S * VPC.CMalpha)/(2 * VPC.Jyy))
     tF.a_theta3 = ((VPC.rho * (trimState.Va**2) * VPC.c * VPC.S * VPC.CMdeltaE)/(2 * VPC.Jyy))
-    tF.a_V1 = ((VPC.rho * (trimState.Va) * VPC.S)/VPC.mass) * (VPC.CD0 + (VPC.CDalpha * trimState.alpha) + (VPC.CDdeltaE * trimInputs.Elevator) -
-                                                               (dTdVa/VPC.mass))
+    tF.a_V1 = ((VPC.rho * (trimState.Va) * VPC.S)/VPC.mass) * (VPC.CD0 + (VPC.CDalpha * trimState.alpha) + (VPC.CDdeltaE * trimInputs.Elevator)) -(dTdVa/VPC.mass)
     tF.a_V2 = dTdThrottle/VPC.mass
-    tF.a_V3 = VPC.g0 * math.cos(trimState.theta - trimState.alpha)
+    tF.a_V3 = VPC.g0 * math.cos(trimState.pitch - trimState.alpha)
 
     return tF
 
