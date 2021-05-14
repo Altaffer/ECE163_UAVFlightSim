@@ -293,21 +293,34 @@ def setControlGains_procedure(inputs):
 	trimInputs = Inputs.controlInputs(**inputs["trimInputs"])
 
 	vclc = VCLC.VehicleClosedLoopControl()
-	vclc.setControlGains(controlGains)
 	vclc.setTrimInputs(trimInputs)
+	vclc.setControlGains(controlGains)
 	
 	ret_dict = {}
-	for ctrl in ['aileronFromRoll', 'rollFromCourse', 'elevatorFromPitch', 'throttleFromAirspeed', 'pitchFromAltitude', 'pitchFromAirspeed', 'rudderFromSideslip']:
+	
+	#PIs:
+	for ctrl in ['rollFromCourse', 'throttleFromAirspeed', 'pitchFromAltitude', 'pitchFromAirspeed', 'rudderFromSideslip']:
+		controller = vclc.__dict__[ctrl]
+		for key in ["kp", 'ki', 'trim', 'lowLimit', 'highLimit']:
+			ret_dict[f"{ctrl}_{key}"] = controller.__dict__[key]
+	#PID:
+	for ctrl in ['aileronFromRoll']:
 		controller = vclc.__dict__[ctrl]
 		for key in ["kp", 'kd', 'ki', 'trim', 'lowLimit', 'highLimit']:
-			if key in controller.__dict__.keys():
-				ret_dict[f"{ctrl}_{key}"] = controller.__dict__[key]
+			ret_dict[f"{ctrl}_{key}"] = controller.__dict__[key]
+	#PD:
+	for ctrl in ['elevatorFromPitch']:
+		controller = vclc.__dict__[ctrl]
+		for key in ["kp", 'kd', 'trim', 'lowLimit', 'highLimit']:
+			ret_dict[f"{ctrl}_{key}"] = controller.__dict__[key]
+	
 	
 	return ret_dict
 
 gains_to_test = [
 	{'kp_roll': 0.012, 'kd_roll': -0.19, 'ki_roll': 0.001, 'kp_sideslip': 11.0, 'ki_sideslip': 8.3, 'kp_course': 4.1, 'ki_course': 2.0, 'kp_pitch': 2.7, 'kd_pitch': 0.097, 'kp_altitude': -0.0016, 'ki_altitude': -0.00079, 'kp_SpeedfromThrottle': 0.27, 'ki_SpeedfromThrottle': 0.15, 'kp_SpeedfromElevator': 0.0029, 'ki_SpeedfromElevator': 0.0016} ,
-{'kp_roll': 0.53, 'kd_roll': -0.091, 'ki_roll': 0.001, 'kp_sideslip': 3.0, 'ki_sideslip': 450.0, 'kp_course': 9.9, 'ki_course': 780.0, 'kp_pitch': 2.1, 'kd_pitch': 0.062, 'kp_altitude': -0.017, 'ki_altitude': -0.36, 'kp_SpeedfromThrottle': 0.21, 'ki_SpeedfromThrottle': 2.6, 'kp_SpeedfromElevator': 0.086, 'ki_SpeedfromElevator': 0.31},
+ 	{'kp_roll': 3.0, 'kd_roll': 0.04, 'ki_roll': 0.001, 'kp_sideslip': 2.0, 'ki_sideslip': 2.0, 'kp_course': 5.0, 'ki_course': 2.0, 'kp_pitch': -10.0, 'kd_pitch': -0.8, 'kp_altitude': 0.08, 'ki_altitude': 0.03, 'kp_SpeedfromThrottle': 2.0, 'ki_SpeedfromThrottle': 1.0, 'kp_SpeedfromElevator': -0.5, 'ki_SpeedfromElevator': -0.1},
+	 {'kp_roll': 0.53, 'kd_roll': -0.091, 'ki_roll': 0.001, 'kp_sideslip': 3.0, 'ki_sideslip': 450.0, 'kp_course': 9.9, 'ki_course': 780.0, 'kp_pitch': 2.1, 'kd_pitch': 0.062, 'kp_altitude': -0.017, 'ki_altitude': -0.36, 'kp_SpeedfromThrottle': 0.21, 'ki_SpeedfromThrottle': 2.6, 'kp_SpeedfromElevator': 0.086, 'ki_SpeedfromElevator': 0.31},
 	]
 trimInputs_to_test = [
 	{},
@@ -333,8 +346,8 @@ def UpdateControlCommands_procedure(inputs):
 	initialState = States.vehicleState(**inputs["initialState"])
 
 	vclc = VCLC.VehicleClosedLoopControl()
-	vclc.setControlGains(controlGains)
 	vclc.setTrimInputs(trimInputs)
+	vclc.setControlGains(controlGains)
 	
 	outputs = vclc.UpdateControlCommands(referenceCommand, initialState)
 	
@@ -432,8 +445,8 @@ def VCLC_Update_procedure(inputs):
 
 	vclc = VCLC.VehicleClosedLoopControl()
 	vclc.setVehicleState(initialState)
-	vclc.setControlGains(controlGains)
 	vclc.setTrimInputs(trimInputs)
+	vclc.setControlGains(controlGains)
 	
 	for i in range(steps):
 		vclc.Update(referenceCommand)		
