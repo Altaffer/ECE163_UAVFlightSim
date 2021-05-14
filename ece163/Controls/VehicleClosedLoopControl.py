@@ -27,7 +27,7 @@ class PDControl():
         self.error = command - current
 
         # setting up the temporary accumulator
-        tempaccumulator = (self.error - self.preverror) / 2
+        tempaccumulator = (self.error + self.preverror) / 2
 
         # accumulator
         self.accumulator += tempaccumulator
@@ -289,9 +289,9 @@ class VehicleClosedLoopControl():
             state.chi -= (2 * math.pi)
 
         #Aileron and Rudder
-        referenceCommands.commandedRoll = self.rollFromCourse.Update(referenceCommands.commandedCourse, state.chi)                             #creating the roll command
+        referenceCommands.commandedRoll = self.rollFromCourse.Update(referenceCommands.commandedCourse, state.chi)    #creating the roll command
         self.trimOutputs.Aileron = self.aileronFromRoll.Update(referenceCommands.commandedRoll, state.roll, state.p)  #creating the aileron command
-        self.trimOutputs.Rudder = self.rudderFromSideslip.Update(0, state.beta)                   #creating the rudder command
+        self.trimOutputs.Rudder = self.rudderFromSideslip.Update(0, state.beta)  #creating the rudder command
 
         #elevator command
         self.trimOutputs.Elevator = self.elevatorFromPitch.Update(referenceCommands.commandedPitch, state.pitch, state.q)
@@ -341,13 +341,53 @@ class VehicleClosedLoopControl():
         various control loops to do the successive loop closure (see Beard Chapter 6). Control loop limits are taken
         from the VehiclePhysicalConstants file, trim inputs are taken from self.trimInputs.
         """
-        self.rollFromCourse.setPIGains(dT=self.dT, kp=controlGains.kp_course, ki=controlGains.ki_course, trim = 0, lowLimit=-math.radians(VPC.bankAngleLimit) , highLimit=math.radians(VPC.bankAngleLimit))
-        self.rudderFromSideslip.setPIGains(dT=self.dT, kp=controlGains.kp_sideslip, ki=controlGains.ki_sideslip, trim=self.trimInputs.Rudder, lowLimit=-math.radians(25.0), highLimit=math.radians(25.0))
-        self.throttleFromAirspeed.setPIGains(dT=self.dT, kp=controlGains.kp_SpeedfromThrottle, ki=controlGains.ki_SpeedfromThrottle, trim=self.trimInputs.Throttle, lowLimit=0.0, highLimit=1)
-        self.pitchFromAltitude.setPIGains(dT=self.dT, kp=controlGains.kp_altitude, ki=controlGains.ki_altitude, trim=0, lowLimit=-math.radians(VPC.pitchAngleLimit), highLimit=math.radians(VPC.pitchAngleLimit))
-        self.pitchFromAirspeed.setPIGains(dT=self.dT, kp=controlGains.kp_SpeedfromElevator, ki=controlGains.ki_SpeedfromElevator, trim=0, lowLimit=-math.radians(VPC.pitchAngleLimit), highLimit=math.radians(VPC.pitchAngleLimit))
-        self.elevatorFromPitch.setPDGains(kp=controlGains.kp_pitch, kd=controlGains.kd_pitch, trim=self.trimInputs.Elevator, lowLimit=-math.radians(25.0), highLimit=math.radians(25.0))
-        self.aileronFromRoll.setPIDGains(dT=self.dT, kp=controlGains.kp_roll, kd=controlGains.kd_roll, ki=controlGains.ki_roll, trim=self.trimInputs.Aileron, lowLimit=-math.radians(25.0), highLimit=math.radians(25.0))
+        self.rollFromCourse.setPIGains(dT=self.dT, kp=controlGains.kp_course,
+                                       ki=controlGains.ki_course,
+                                       trim = 0,
+                                       lowLimit=-math.radians(VPC.bankAngleLimit) ,
+                                       highLimit=math.radians(VPC.bankAngleLimit))
+
+        self.rudderFromSideslip.setPIGains(dT=self.dT,
+                                           kp=controlGains.kp_sideslip,
+                                           ki=controlGains.ki_sideslip,
+                                           trim=self.trimInputs.Rudder,
+                                           lowLimit=-math.radians(25.0),
+                                           highLimit=math.radians(25.0))
+
+        self.throttleFromAirspeed.setPIGains(dT=self.dT,
+                                             kp=controlGains.kp_SpeedfromThrottle,
+                                             ki=controlGains.ki_SpeedfromThrottle,
+                                             trim=self.trimInputs.Throttle,
+                                             lowLimit=0.0,
+                                             highLimit=1)
+
+        self.pitchFromAltitude.setPIGains(dT=self.dT,
+                                          kp=controlGains.kp_altitude,
+                                          ki=controlGains.ki_altitude,
+                                          trim=0,
+                                          lowLimit=-math.radians(VPC.pitchAngleLimit),
+                                          highLimit=math.radians(VPC.pitchAngleLimit))
+
+        self.pitchFromAirspeed.setPIGains(dT=self.dT,
+                                          kp=controlGains.kp_SpeedfromElevator,
+                                          ki=controlGains.ki_SpeedfromElevator,
+                                          trim=0,
+                                          lowLimit=-math.radians(VPC.pitchAngleLimit),
+                                          highLimit=math.radians(VPC.pitchAngleLimit))
+
+        self.elevatorFromPitch.setPDGains(kp=controlGains.kp_pitch,
+                                          kd=controlGains.kd_pitch,
+                                          trim=self.trimInputs.Elevator,
+                                          lowLimit=-math.radians(25.0),
+                                          highLimit=math.radians(25.0))
+
+        self.aileronFromRoll.setPIDGains(dT=self.dT,
+                                         kp=controlGains.kp_roll,
+                                         kd=controlGains.kd_roll,
+                                         ki=controlGains.ki_roll,
+                                         trim=self.trimInputs.Aileron,
+                                         lowLimit=-math.radians(25.0),
+                                         highLimit=math.radians(25.0))
         return
 
     def setTrimInputs(self, trimInputs=Inputs.controlInputs(Throttle=0.5, Aileron=0.0, Elevator=0.0, Rudder=0.0)):
@@ -360,4 +400,4 @@ class VehicleClosedLoopControl():
         """Wrapper function to inject vehicle state into the class.
         """
         self.VAmodel.vehicleDynamicsModel.state = state
-        return self.VAmodel.vehicleDynamicsModel.state
+        return
