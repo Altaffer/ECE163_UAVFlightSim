@@ -10,7 +10,6 @@ class PDControl():
         """Functions which implement the PD control with saturation where the derivative is available as a separate input
         to the function. The output is: u = u_ref + Kp * error - Kd * dot{error} limited between lowLimit and highLimit.
         """
-        self.dT = dT
         self.kp = kp
         self.kd = kd
         self.trim = trim
@@ -28,20 +27,20 @@ class PDControl():
         self.error = command - current
 
         # setting up the temporary accumulator
-        tempaccumulator = self.dT * (self.error - self.preverror) / 2
+        tempaccumulator = (self.error - self.preverror) / 2
 
         # accumulator
         self.accumulator += tempaccumulator
 
         # finding the real u values
         up = self.kp * self.error
-        ud = self.kd + derivative
-        utot = self.trim + up + ud
+        ud = self.kd * derivative
+        utot = self.trim + up - ud
 
-        if abs(utot) > self.highLimit:
+        if utot > self.highLimit:
             utot = self.highLimit
             self.accumulator -= tempaccumulator
-        if abs(utot) < self.lowLimit:
+        if utot < self.lowLimit:
             utot = self.lowLimit
             self.accumulator -= tempaccumulator
 
@@ -51,6 +50,15 @@ class PDControl():
 
     def setPDGains(self, kp=0.0, kd=0.0, trim=0.0, lowLimit=0.0, highLimit=0.0):
         """Function to set the gains for the PD control block (including the trim output and the limits)"""
+        self.kp = kp
+        self.kd = kd
+        self.trim = trim
+        self.lowLimit = lowLimit
+        self.highLimit = highLimit
+        self.accumulator = 0
+        self.error = 0
+        return
+
 
 class PIControl():
     def __init__(self, dT=VPC.dT, kp=0.0, ki=0.0, trim=0.0, lowLimit=0.0, highLimit=0.0):
@@ -79,7 +87,7 @@ class PIControl():
         self.error = command - current
 
         # setting up the temporary accumulator
-        tempaccumulator = self.dT * (self.error - self.preverror) / 2
+        tempaccumulator = self.dT * (self.error + self.preverror) / 2
 
         # accumulator
         self.accumulator += tempaccumulator
@@ -89,10 +97,10 @@ class PIControl():
         ui = self.ki * self.accumulator
         utot = self.trim + up + ui
 
-        if abs(utot) > self.highLimit:
+        if utot > self.highLimit:
             utot = self.highLimit
             self.accumulator -= tempaccumulator
-        if abs(utot) < self.lowLimit:
+        if utot < self.lowLimit:
             utot = self.lowLimit
             self.accumulator -= tempaccumulator
 
@@ -122,6 +130,7 @@ class PIControl():
         self.accumulator = 0
         self.error = 0
         return
+
 
 class PIDControl():
     def __init__(self, dT=VPC.dT, kp=0.0, kd=0.0, ki=0.0, trim=0.0, lowLimit=0.0, highLimit=0.0):
@@ -155,21 +164,21 @@ class PIDControl():
         self.error = command - current
 
         # setting up the temporary accumulator
-        tempaccumulator = self.dT * (self.error - self.preverror) / 2
+        tempaccumulator = self.dT * (self.error + self.preverror) / 2
 
         # accumulator
         self.accumulator += tempaccumulator
 
         # finding the real u values
         up = self.kp * self.error
-        ud = self.kd + derivative
+        ud = self.kd * derivative
         ui = self.ki * self.accumulator
-        utot = self.trim + up + ud + ui
+        utot = self.trim + up - ud + ui
 
-        if abs(utot) > self.highLimit:
+        if utot > self.highLimit:
             utot = self.highLimit
             self.accumulator -= tempaccumulator
-        if abs(utot) < self.lowLimit:
+        if utot < self.lowLimit:
             utot = self.lowLimit
             self.accumulator -= tempaccumulator
 
@@ -201,6 +210,7 @@ class PIDControl():
         self.error = 0
         return
 
+
 class VehicleClosedLoopControl():
     def __init__(self, dT=0.01, rudderControlSource='SIDESLIP'):
         """Class that implements the entire closed loop control using the successive loop closure method of Beard
@@ -211,11 +221,11 @@ class VehicleClosedLoopControl():
         """
         self.dT = dT
         self.rudderControlSource = rudderControlSource
-        self.VAmodel = VAM.VehicleAerodynamicsModel
+        self.VAmodel = VAM.VehicleAerodynamicsModel()
         self.controlGains = Controls.controlGains()
-        self.trimInputs = Inputs.controlInputs
-        self.trimOutputs = Inputs.controlInputs
-        self.mode = Controls.AlitudeStates.HOLDING
+        self.trimInputs = Inputs.controlInputs()
+        self.trimOutputs = Inputs.controlInputs()
+        self.mode = Controls.AltitudeStates.HOLDING
         self.rollFromCourse = PIControl()
         self.rudderFromSideslip = PIControl()
         self.throttleFromAirspeed = PIControl()
@@ -224,11 +234,13 @@ class VehicleClosedLoopControl():
         self.elevatorFromPitch = PDControl()
         self.aileronFromRoll = PIDControl()
 
-
     def Update(self, referenceCommands=Controls.referenceCommands):
         """Function that wraps the UpdateControlCommands and feeds it the correct state (estimated or otherwise).
         Updates the vehicle state internally using the vehicleAerodynamics.Update command.
         """
+        controls = self.UpdateControlCommands(referenceCommands, self.VAmodel.vehicleDynamicsModel.state)
+        self.VAmodel.Update(controls)
+        return
 
     def UpdateControlCommands(self, referenceCommands, state):
         """Function that implements the full closed loop controls using the commanded inputs of airspeed, altitude, and
@@ -236,6 +248,55 @@ class VehicleClosedLoopControl():
         Note that the internal commandedPitch and commandedRoll of the reference commands are altered by this function,
         and this is used to track the reference commands by the simulator.
         """
+
+        #defining variables for state machine
+        upper_thresh = referenceCommands.commandedAltitude + VPC.altitudeHoldZone
+        lower_thresh = referenceCommands.commandedAltitude - VPC.altitudeHoldZone
+
+        #initializing pitch command
+        referenceCommands.commandedPitch = 0
+
+        #state machine
+        if self.mode == Controls.AltitudeStates.CLIMBING:           #Climbing
+            self.trimOutputs.Throttle = 1.0
+            referenceCommands.commandedPitch = self.pitchFromAirspeed.Update(referenceCommands.commandedAirspeed, state.Va)
+            if lower_thresh < referenceCommands.commandAltitude and referenceCommands.commandedAltitude < upper_thresh:
+                self.pitchFromAltitude.resetIntegrator()
+                self.mode = Astate.HOLDING
+
+        elif self.mode == Controls.AltitudeStates.HOLDING:          #Holding
+            self.trimOutputs.Throttle = self.throttleFromAirspeed.Update(referenceCommands.commandedAirspeed, state.Va)
+            referenceCommands.commandedPitch = self.pitchFromAltitude.Update(referenceCommands.commandedAltitude, -state.pd)
+            if referenceCommands.commandedAltitude < lower_thresh:
+                self.pitchFromAirspeed.resetIntegrator()
+                self.mode = Astate.CLIMBING
+            elif referenceCommands.commandedAltitude > upper_thresh:
+                self.pitchFromAirspeed.resetIntegrator()
+                self.mode = Astate.DESCENDING
+
+        elif self.mode == Controls.AlitudeStates.DESCENDING:       #Decending
+            self.trimOutputs.Throttle = 0
+            referenceCommands.commandedPitch = self.pitchFromAirspeed.Update(referenceCommands.commandAirspeed, state.Va)
+            if lower_thresh < referenceCommands.commandAltitude and referenceCommands.commandAltitude < upper_thresh:
+                self.pitchFromAltitude.resetIntegrator()
+                self.mode = Astate.HOLDING
+
+        #chi constraints
+        chierror = referenceCommands.commandedCourse - state.chi
+        if chierror > math.pi:
+            state.chi += (2 * math.pi)
+        if chierror < -math.pi:
+            state.chi -= (2 * math.pi)
+
+        #Aileron and Rudder
+        referenceCommands.commandedRoll = self.rollFromCourse.Update(referenceCommands.commandedCourse, state.chi)                             #creating the roll command
+        self.trimOutputs.Aileron = self.aileronFromRoll.Update(referenceCommands.commandedRoll, state.roll, state.p)  #creating the aileron command
+        self.trimOutputs.Rudder = self.rudderFromSideslip.Update(0, state.beta)                   #creating the rudder command
+
+        #elevator command
+        self.trimOutputs.Elevator = self.elevatorFromPitch.Update(referenceCommands.commandedPitch, state.pitch, state.q)
+
+        return self.trimOutputs
 
     def getControlGains(self):
         """Wrapper function to extract control gains from the class.
@@ -267,27 +328,29 @@ class VehicleClosedLoopControl():
         """Resets the module to run again. Does not overwrite control gains, but does reset the integral states of all
         of the PI control loops.
         """
+        self.VAmodel = VAM.VehicleAerodynamicsModel()
+        self.rollFromCourse.resetIntegrator()
+        self.rudderFromSideslip.resetIntegrator()
+        self.throttleFromAirspeed.resetIntegrator()
+        self.pitchFromAltitude.resetIntegrator()
+        self.pitchFromAirspeed.resetIntegrator()
+        self.aileronFromRoll.resetIntegrator()
 
     def setControlGains(self, controlGains=Controls.controlGains()):
         """Function to set all of the gains from the controlGains previously computed to the correct places within the
         various control loops to do the successive loop closure (see Beard Chapter 6). Control loop limits are taken
         from the VehiclePhysicalConstants file, trim inputs are taken from self.trimInputs.
         """
-        self.rollFromCourse.setPIGains(dT=self.dT, kp=controlGains.kp_course, ki=controlGains.ki_course, trim = , lowLimit= , highLimit=)
-        self.rudderFromSideslip = controlGains.
-        self.throttleFromAirspeed = controlGains.
-        self.pitchFromAltitude = controlGains.
-        self.pitchFromAirspeed = controlGains.
-        self.elevatorFromPitch = controlGains.
-        self.aileronFromRoll = controlGains.
-        PDControl.setPDGains()
-        PIControl.setPIGains()
-        PIDControl.setPIDGains()
+        self.rollFromCourse.setPIGains(dT=self.dT, kp=controlGains.kp_course, ki=controlGains.ki_course, trim = 0, lowLimit=-math.radians(VPC.bankAngleLimit) , highLimit=math.radians(VPC.bankAngleLimit))
+        self.rudderFromSideslip.setPIGains(dT=self.dT, kp=controlGains.kp_sideslip, ki=controlGains.ki_sideslip, trim=self.trimInputs.Rudder, lowLimit=-math.radians(25.0), highLimit=math.radians(25.0))
+        self.throttleFromAirspeed.setPIGains(dT=self.dT, kp=controlGains.kp_SpeedfromThrottle, ki=controlGains.ki_SpeedfromThrottle, trim=self.trimInputs.Throttle, lowLimit=0.0, highLimit=1)
+        self.pitchFromAltitude.setPIGains(dT=self.dT, kp=controlGains.kp_altitude, ki=controlGains.ki_altitude, trim=0, lowLimit=-math.radians(VPC.pitchAngleLimit), highLimit=math.radians(VPC.pitchAngleLimit))
+        self.pitchFromAirspeed.setPIGains(dT=self.dT, kp=controlGains.kp_SpeedfromElevator, ki=controlGains.ki_SpeedfromElevator, trim=0, lowLimit=-math.radians(VPC.pitchAngleLimit), highLimit=math.radians(VPC.pitchAngleLimit))
+        self.elevatorFromPitch.setPDGains(kp=controlGains.kp_pitch, kd=controlGains.kd_pitch, trim=self.trimInputs.Elevator, lowLimit=-math.radians(25.0), highLimit=math.radians(25.0))
+        self.aileronFromRoll.setPIDGains(dT=self.dT, kp=controlGains.kp_roll, kd=controlGains.kd_roll, ki=controlGains.ki_roll, trim=self.trimInputs.Aileron, lowLimit=-math.radians(25.0), highLimit=math.radians(25.0))
+        return
 
-
-
-
-    def setTrimInputs(self, trimInputs=controlInputs(Throttle=0.5, Aileron=0.0, Elevator=0.0, Rudder=0.0)):
+    def setTrimInputs(self, trimInputs=Inputs.controlInputs(Throttle=0.5, Aileron=0.0, Elevator=0.0, Rudder=0.0)):
         """Wrapper function to inject the trim inputs into the class.
         """
         self.trimInputs = trimInputs
