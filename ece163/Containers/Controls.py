@@ -58,7 +58,7 @@ class referenceCommands():
 
 
 class controlGains():
-	def __init__(self):
+	def __init__(self, kp_roll = 0.0, kd_roll = 0.0, ki_roll = 0.0, kp_sideslip = 0.0, ki_sideslip = 0.0, kp_course = 0.0, ki_course = 0.0, kp_pitch = 0.0, kd_pitch = 0.0, kp_altitude = 0.0, ki_altitude = 0.0, kp_SpeedfromThrottle = 0.0, ki_SpeedfromThrottle = 0.0, kp_SpeedfromElevator = 0.0, ki_SpeedfromElevator = 0.0):
 		"""
 		Class to hold the control gains for both lateral and longitudinal autopilots in the successive loop closure method
 		described in Beard Chapter 6.
@@ -66,22 +66,22 @@ class controlGains():
 		:return: none
 		"""
 		# Lateral Gains
-		self.kp_roll = 0.0
-		self.kd_roll = 0.0
-		self.ki_roll = 0.0
-		self.kp_sideslip = 0.0
-		self.ki_sideslip = 0.0
-		self.kp_course = 0.0
-		self.ki_course = 0.0
+		self.kp_roll = kp_roll
+		self.kd_roll = kd_roll
+		self.ki_roll = ki_roll
+		self.kp_sideslip = kp_sideslip
+		self.ki_sideslip = ki_sideslip
+		self.kp_course = kp_course
+		self.ki_course = ki_course
 		# Longitudinal Gains
-		self.kp_pitch = 0.0
-		self.kd_pitch = 0.0
-		self.kp_altitude = 0.0
-		self.ki_altitude = 0.0
-		self.kp_SpeedfromThrottle = 0.0
-		self.ki_SpeedfromThrottle = 0.0
-		self.kp_SpeedfromElevator = 0.0
-		self.ki_SpeedfromElevator = 0.0
+		self.kp_pitch = kp_pitch
+		self.kd_pitch = kd_pitch
+		self.kp_altitude = kp_altitude
+		self.ki_altitude = ki_altitude
+		self.kp_SpeedfromThrottle = kp_SpeedfromThrottle
+		self.ki_SpeedfromThrottle = ki_SpeedfromThrottle
+		self.kp_SpeedfromElevator = kp_SpeedfromElevator
+		self.ki_SpeedfromElevator = ki_SpeedfromElevator
 		return
 
 	def __eq__(self, other):
@@ -106,7 +106,7 @@ class controlGains():
 
 
 class controlTuning():
-	def __init__(self):
+	def __init__(self, Wn_roll = 0.0, Zeta_roll = 0.0, Wn_course = 0.0, Zeta_course = 0.0, Wn_sideslip = 0.0, Zeta_sideslip = 0.0, Wn_pitch = 0.0, Zeta_pitch = 0.0, Wn_altitude = 0.0	, Zeta_altitude = 0.0, Wn_SpeedfromThrottle = 0.0, Zeta_SpeedfromThrottle = 0.0, Wn_SpeedfromElevator = 0.0, Zeta_SpeedfromElevator = 0.0):
 		"""
 		Class to hold the tuning knobs for both lateral and longitudinal autopilots in the successive loop closure method
 		described in Beard Chapter 6. Note that in the successive loop closure methodology, the gains are determined for
@@ -116,21 +116,21 @@ class controlTuning():
 		:return: none
 		"""
 		# tuning knobs for lateral control (ignoring Ki_phi)
-		self.Wn_roll = 0.0
-		self.Zeta_roll = 0.0
-		self.Wn_course = 0.0	# Wn_roll should be 5-10x larger
-		self.Zeta_course = 0.0
-		self.Wn_sideslip = 0.0
-		self.Zeta_sideslip = 0.0
-		#tuning knows for longitudinal control
-		self.Wn_pitch = 0.0
-		self.Zeta_pitch = 0.0
-		self.Wn_altitude = 0.0	# Wn_pitch should be 5-10x larger
-		self.Zeta_altitude = 0.0
-		self.Wn_SpeedfromThrottle = 0.0
-		self.Zeta_SpeedfromThrottle = 0.0
-		self.Wn_SpeedfromElevator = 0.0
-		self.Zeta_SpeedfromElevator = 0.0
+		self.Wn_roll  = Wn_roll 
+		self.Zeta_roll  = Zeta_roll 
+		self.Wn_course  = Wn_course 	# Wn_roll should be 5-10x larger
+		self.Zeta_course  = Zeta_course 
+		self.Wn_sideslip  = Wn_sideslip 
+		self.Zeta_sideslip  = Zeta_sideslip 
+		#tuning knobs for longitudinal control
+		self.Wn_pitch  = Wn_pitch 
+		self.Zeta_pitch  = Zeta_pitch 
+		self.Wn_altitude  = Wn_altitude 	# Wn_pitch should be 5-10x larger
+		self.Zeta_altitude  = Zeta_altitude 
+		self.Wn_SpeedfromThrottle  = Wn_SpeedfromThrottle 
+		self.Zeta_SpeedfromThrottle  = Zeta_SpeedfromThrottle 
+		self.Wn_SpeedfromElevator  = Wn_SpeedfromElevator 
+		self.Zeta_SpeedfromElevator  = Zeta_SpeedfromElevator 
 		return
 
 	def __str__(self):

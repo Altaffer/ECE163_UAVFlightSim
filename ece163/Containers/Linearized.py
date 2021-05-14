@@ -13,27 +13,27 @@ import ece163.Constants.VehiclePhysicalConstants as VPC
 testingAbs_tol = 1e-6
 
 class transferFunctions:
-	def __init__(self):
+	def __init__(self, Va_trim = 0.0, alpha_trim = 0.0, beta_trim = 0.0, gamma_trim = 0.0, theta_trim = 0.0, phi_trim = 0.0, a_phi1 = 0.0, a_phi2 = 0.0, a_beta1 = 0.0, a_beta2 = 0.0, a_theta1 = 0.0, a_theta2 = 0.0, a_theta3 = 0.0, a_V1 = 0.0, a_V2 = 0.0, a_V3 = 0.0):
 		"""
 		Defines the parameters that will be used to implement the transfer function versions of control loops (using
 		successive loop closure). See Beard Chapter 5 for details.
 		"""
-		self.Va_trim = 0.0
-		self.alpha_trim = 0.0
-		self.beta_trim = 0.0
-		self.gamma_trim = 0.0
-		self.theta_trim = 0.0
-		self.phi_trim = 0.0
-		self.a_phi1 = 0.0
-		self.a_phi2 = 0.0
-		self.a_beta1 = 0.0
-		self.a_beta2 = 0.0
-		self.a_theta1 = 0.0
-		self.a_theta2 = 0.0
-		self.a_theta3 = 0.0
-		self.a_V1 = 0.0
-		self.a_V2 = 0.0
-		self.a_V3 = 0.0
+		self.Va_trim = Va_trim
+		self.alpha_trim = alpha_trim
+		self.beta_trim = beta_trim
+		self.gamma_trim = gamma_trim
+		self.theta_trim = theta_trim
+		self.phi_trim = phi_trim
+		self.a_phi1 = a_phi1
+		self.a_phi2 = a_phi2
+		self.a_beta1 = a_beta1
+		self.a_beta2 = a_beta2
+		self.a_theta1 = a_theta1
+		self.a_theta2 = a_theta2
+		self.a_theta3 = a_theta3
+		self.a_V1 = a_V1
+		self.a_V2 = a_V2
+		self.a_V3 = a_V3
 		return
 
 	def __str__(self):
