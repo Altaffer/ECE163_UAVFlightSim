@@ -253,45 +253,45 @@ class VehicleClosedLoopControl():
         upper_thresh = referenceCommands.commandedAltitude + VPC.altitudeHoldZone
         lower_thresh = referenceCommands.commandedAltitude - VPC.altitudeHoldZone
 
-        #initializing pitch command
-        referenceCommands.commandedPitch = 0
-
-        #state machine
-        if self.mode == Controls.AltitudeStates.CLIMBING:           #Climbing
-            self.trimOutputs.Throttle = 1.0
-            referenceCommands.commandedPitch = self.pitchFromAirspeed.Update(referenceCommands.commandedAirspeed, state.Va)
-            if lower_thresh < referenceCommands.commandAltitude and referenceCommands.commandedAltitude < upper_thresh:
-                self.pitchFromAltitude.resetIntegrator()
-                self.mode = Astate.HOLDING
-
-        elif self.mode == Controls.AltitudeStates.HOLDING:          #Holding
-            self.trimOutputs.Throttle = self.throttleFromAirspeed.Update(referenceCommands.commandedAirspeed, state.Va)
-            referenceCommands.commandedPitch = self.pitchFromAltitude.Update(referenceCommands.commandedAltitude, -state.pd)
-            if referenceCommands.commandedAltitude < lower_thresh:
-                self.pitchFromAirspeed.resetIntegrator()
-                self.mode = Astate.CLIMBING
-            elif referenceCommands.commandedAltitude > upper_thresh:
-                self.pitchFromAirspeed.resetIntegrator()
-                self.mode = Astate.DESCENDING
-
-        elif self.mode == Controls.AlitudeStates.DESCENDING:       #Decending
-            self.trimOutputs.Throttle = 0
-            referenceCommands.commandedPitch = self.pitchFromAirspeed.Update(referenceCommands.commandAirspeed, state.Va)
-            if lower_thresh < referenceCommands.commandAltitude and referenceCommands.commandAltitude < upper_thresh:
-                self.pitchFromAltitude.resetIntegrator()
-                self.mode = Astate.HOLDING
-
         #chi constraints
         chierror = referenceCommands.commandedCourse - state.chi
-        if chierror > math.pi:
+        if chierror >= math.pi:
             state.chi += (2 * math.pi)
-        if chierror < -math.pi:
+        if chierror <= -math.pi:
             state.chi -= (2 * math.pi)
 
-        #Aileron and Rudder
+        #Aileron and Rudder command and commanded roll
         referenceCommands.commandedRoll = self.rollFromCourse.Update(referenceCommands.commandedCourse, state.chi)    #creating the roll command
         self.trimOutputs.Aileron = self.aileronFromRoll.Update(referenceCommands.commandedRoll, state.roll, state.p)  #creating the aileron command
         self.trimOutputs.Rudder = self.rudderFromSideslip.Update(0, state.beta)  #creating the rudder command
+
+        #state machine
+        if -state.pd > upper_thresh:                                #for DESCENDING
+            if self.mode != Controls.AltitudeStates.DESCENDING:
+                self.mode = Controls.AltitudeStates.DESCENDING
+                self.pitchFromAirspeed.resetIntegrator()
+            #Throttle command
+            self.trimOutputs.Throttle = 0
+            #commanded pitch
+            referenceCommands.commandedPitch=self.pitchFromAirspeed.Update(referenceCommands.commandedAirspeed,state.Va)
+
+        elif -state.pd < lower_thresh:                              #for CLIMBING
+            if self.mode != Controls.AltitudeStates.CLIMBING:
+                self.mode = Controls.AltitudeStates.CLIMBING
+                self.pitchFromAirspeed.resetIntegrator()
+            #Throttle command
+            self.trimOutputs.Throttle = 1
+            #commandedpitch
+            referenceCommands.commandedPitch=self.pitchFromAirspeed.Update(referenceCommands.commandedAirspeed,state.Va)
+
+        elif lower_thresh < -state.pd and -state.pd < upper_thresh: #for HOLDING
+            if self.mode != Controls.AltitudeStates.HOLDING:
+                self.mode = Controls.AltitudeStates.HOLDING
+                self.pitchFromAltitude.resetIntegrator()
+            #Throttle command
+            self.trimOutputs.Throttle = self.throttleFromAirspeed.Update(referenceCommands.commandedAirspeed, state.Va)
+            #commanded pitch
+            referenceCommands.commandedPitch=self.pitchFromAltitude.Update(referenceCommands.commandedAirspeed,state.Va)
 
         #elevator command
         self.trimOutputs.Elevator = self.elevatorFromPitch.Update(referenceCommands.commandedPitch, state.pitch, state.q)
