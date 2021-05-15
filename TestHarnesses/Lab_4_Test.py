@@ -433,6 +433,70 @@ for i, (controlGains, 	trimInputs,
 tm.end_block()
 
 
+#%%
+tm.start_block("VehicleClosedLoopControl State Machine tests")
+
+#Ok so this is a bit weird because we need to make a dummy child class to keep track of resets
+
+class dummyPIControl(VCLC.PIControl):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.resetted = False
+	def resetIntegrator(self, *args, **kwargs):
+		super().resetIntegrator(*args, **kwargs)
+		self.resetted = True
+		
+enum_lookup = {Controls.AltitudeStates.HOLDING:0, 
+			   Controls.AltitudeStates.CLIMBING:1, 
+			   Controls.AltitudeStates.DESCENDING:-1}	
+
+def StateMachine_procedure(inputs):
+	
+	referenceCommand = Controls.referenceCommands(**inputs["referenceCommand"])
+	initialState = States.vehicleState(**inputs["initialState"])
+
+	vclc = VCLC.VehicleClosedLoopControl()
+	vclc.pitchFromAirspeed = dummyPIControl()
+	vclc.pitchFromAltitude = dummyPIControl()
+	
+	vclc.mode = inputs["initialMode"]
+	vclc.UpdateControlCommands(referenceCommand, initialState)
+	
+	ret_dict = {}
+	ret_dict["pitchFromAirspeed_reset"] = vclc.pitchFromAirspeed.resetted
+	ret_dict["pitchFromAltitude_reset"] = vclc.pitchFromAltitude.resetted
+	ret_dict["final_mode"] = enum_lookup[vclc.mode]
+	return ret_dict
+
+
+initial_states_to_test = [
+# 	{},
+	{"pd":0},
+	{"pd":-100},
+	{"pd":-200},
+]
+
+reference_commands_to_test = [
+# 	{},
+	{"altitudeCommand":0},
+	{"altitudeCommand":-100},
+	{"altitudeCommand":-200},
+	]
+	
+initialModes_to_test = [
+	Controls.AltitudeStates.HOLDING,
+	Controls.AltitudeStates.CLIMBING, 
+	Controls.AltitudeStates.DESCENDING
+	]
+
+for i, ( 	referenceCommand, 	initialState, initialMode ) in enumerate(itertools.product(  		reference_commands_to_test, 	initial_states_to_test, initialModes_to_test)):
+	
+	inputs = {"initialMode":initialMode,
+		      "referenceCommand":referenceCommand, "initialState":initialState}
+	tm.test(f"StateMachine_{i}", StateMachine_procedure,
+		 inputs)
+	
+tm.end_block()
 
 #%%
 tm.start_block("VehicleClosedLoopControl Update() tests")
