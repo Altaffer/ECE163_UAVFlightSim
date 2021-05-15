@@ -24,6 +24,8 @@ import ece163.Controls.VehicleTrim as VT
 import ece163.Containers.Controls as Controls
 import ece163.Controls.VehicleControlGains as VCG
 import ece163.Containers.Linearized as Linearized
+from matplotlib import pyplot as plt
+
 
 
 """math.isclose doesn't work well for comparing things near 0 unless we 
@@ -1588,106 +1590,613 @@ computeTuningParameterstests()
 
 def Simulationtest():
 	print("Begining testing of the simulation")
-	#instance of VehicleClosedLoopControl
-	Vcl = VCLC.VehicleClosedLoopControl()
+	def Simulationest1():
+		# instance of VehicleClosedLoopControl
+		Vcl = VCLC.VehicleClosedLoopControl()
 
-	#setting dT
-	Vcl.dT = 0.001
+		# setting dT
+		Vcl.dT = 0.001
 
-	#setting rudderControl source
-	Vcl.rudderControlSource = 'SIDESLIP'
+		# setting rudderControl source
+		Vcl.rudderControlSource = 'SIDESLIP'
 
-	#setting VehicleAerodynamicsModel
-	Vcl.VAmodel.InitialSpeed = VPC.InitialSpeed		#Initial Speed
-	Vcl.VAmodel.InitialHeight = VPC.InitialDownPosition		#Initial Height
-	Vcl.VAmodel.WindModel.dT = 0.001	#WindModel time step
-	Vcl.VAmodel.WindModel.Va = 3		#WindModel airspeed
-	Vcl.Vamodel.WindModel.drydenParameters = VPC.DrydenLowAltitudeLight #Windmodel DrydenParameters
-	Vcl.VAmodel.vehicleDynamicsModel.dT = 0.001
+		# setting VehicleAerodynamicsModel
+		Vcl.VAmodel.InitialSpeed = VPC.InitialSpeed  # Initial Speed
+		Vcl.VAmodel.InitialHeight = VPC.InitialDownPosition  # Initial Height
+		Vcl.VAmodel.WindModel.dT = 0.001  # WindModel time step
+		Vcl.VAmodel.WindModel.Va = 3  # WindModel airspeed
+		Vcl.VAmodel.WindModel.drydenParameters = VPC.DrydenLowAltitudeLight  # Windmodel DrydenParameters
+		Vcl.VAmodel.vehicleDynamicsModel.dT = 0.001
 
-	#setting control gains
-	#lateral Gains
-	Vcl.controlGains = Inputs.controlInputs()
-	Vcl.controlGains.kp_roll = 3
-	Vcl.controlGains.kd_roll = 0.04
-	Vcl.controlGains.ki_roll = 0.001
-	Vcl.controlGains.kp_sideslip = 2
-	Vcl.controlGains.ki_sideslip = 2
-	Vcl.controlGains.kp_course = 5
-	Vcl.controlGains.ki_course = 2
-	# Longitudinal Gains
-	Vcl.controlGains.kp_pitch = -10
-	Vcl.controlGains.kd_pitch = -0.8
-	Vcl.controlGains.kp_altitude = 0.08
-	Vcl.controlGains.ki_altitude = 0.03
-	Vcl.controlGains.kp_SpeedfromThrottle = 2.0
-	Vcl.controlGains.ki_SpeedfromThrottle = 1.0
-	Vcl.controlGains.kp_SpeedfromElevator = -0.5
-	Vcl.controlGains.ki_SpeedfromElevator = -0.1
+		# setting control gains
+		# lateral Gains
+		Vcl.controlGains = Inputs.controlInputs()
+		Vcl.controlGains.kp_roll = 3
+		Vcl.controlGains.kd_roll = 0.04
+		Vcl.controlGains.ki_roll = 0.001
+		Vcl.controlGains.kp_sideslip = 2
+		Vcl.controlGains.ki_sideslip = 2
+		Vcl.controlGains.kp_course = 5
+		Vcl.controlGains.ki_course = 2
+		# Longitudinal Gains
+		Vcl.controlGains.kp_pitch = -10
+		Vcl.controlGains.kd_pitch = -0.8
+		Vcl.controlGains.kp_altitude = 0.08
+		Vcl.controlGains.ki_altitude = 0.03
+		Vcl.controlGains.kp_SpeedfromThrottle = 2.0
+		Vcl.controlGains.ki_SpeedfromThrottle = 1.0
+		Vcl.controlGains.kp_SpeedfromElevator = -0.5
+		Vcl.controlGains.ki_SpeedfromElevator = -0.1
 
-	#setting trim Inputs
-	Vcl.trimInputs = Inputs.controlInputs()
-	Vcl.trimInputs.Throttle = 0.8
-	Vcl.trimInputs.Aileron = 0
-	Vcl.trimInputs.Elevator = 0
-	Vcl.trimInputs.Rudder = 0
+		# setting trim Inputs
+		Vcl.trimInputs = Inputs.controlInputs()
+		Vcl.trimInputs.Throttle = 0.8
+		Vcl.trimInputs.Aileron = 0
+		Vcl.trimInputs.Elevator = 0
+		Vcl.trimInputs.Rudder = 0
 
-	#setting mode
-	Vcl.mode = Controls.AltitudeStates.HOLDING
+		# setting mode
+		Vcl.mode = Controls.AltitudeStates.HOLDING
 
-	#graphing
-	#Time
-	T_tot = 20			#a total of 20 seconds for flight
-	n_step = int(T_tot / Vcl.dT)
-	t_data = [i * dT for i in range(n_step)]
+		# graphing
+		# Time
+		T_tot = 20  # a total of 20 seconds for flight
+		n_step = int(T_tot / Vcl.dT)
+		t_data = [i * Vcl.dT for i in range(n_step)]
 
-	#lists for function
-	pd_data = [0 for i in range(n_step)]		#pd
-	pe_data = [0 for i in range(n_step)]		#pe
-	pn_data = [0 for i in range(n_step)]		#pd
-	u_data = [0 for i in range(n_step)]			#u
-	v_data = [0 for i in range(n_step)]			#v
-	w_data = [0 for i in range(n_step)]			#w
-	yaw_data = [0 for i in range(n_step)]		#yaw
-	pitch_data = [0 for i in range(n_step)]		#pitch
-	roll_data = [0 for i in range(n_step)]		#roll
-	p_data = [0 for i in range(n_step)]			#p
-	q_data = [0 for i in range(n_step)]			#q
-	r_data = [0 for i in range(n_step)]			#r
+		# lists for function
+		pd_data = [0 for i in range(n_step)]  # pd
+		pe_data = [0 for i in range(n_step)]  # pe
+		pn_data = [0 for i in range(n_step)]  # pd
+		u_data = [0 for i in range(n_step)]  # u
+		v_data = [0 for i in range(n_step)]  # v
+		w_data = [0 for i in range(n_step)]  # w
+		yaw_data = [0 for i in range(n_step)]  # yaw
+		pitch_data = [0 for i in range(n_step)]  # pitch
+		roll_data = [0 for i in range(n_step)]  # roll
+		p_data = [0 for i in range(n_step)]  # p
+		q_data = [0 for i in range(n_step)]  # q
+		r_data = [0 for i in range(n_step)]  # r
 
-	#Reference Commands
-	ReferenceCommands=Controls.referenceCommands
-	ReferenceCommands.courseCommand = VPC.InitialYawAngle
-	ReferenceCommands.altitudeCommand = -VPC.InitialDownPosition
-	ReferenceCommands.airspeedCommand = VPC.InitialSpeed
+		# Reference Commands
+		ReferenceCommands = Controls.referenceCommands()
+		ReferenceCommands.courseCommand = VPC.InitialYawAngle
+		ReferenceCommands.altitudeCommand = -VPC.InitialDownPosition
+		ReferenceCommands.airspeedCommand = VPC.InitialSpeed
 
-	#loop for many instances
-	for i in range(n_step):
-		# record our data
-		pd_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pd
-		pe_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pe
-		pn_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pn
-		u_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.u
-		v_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.v
-		w_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.w
-		yaw_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.yaw
-		pitch_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pitch
-		roll_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.roll
-		p_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.p
-		q_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.q
-		r_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.r
+		# loop for many instances
+		for i in range(n_step):
+			# record our data
+			pd_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pd
+			pe_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pe
+			pn_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pn
+			u_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.u
+			v_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.v
+			w_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.w
+			yaw_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.yaw
+			pitch_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pitch
+			roll_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.roll
+			p_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.p
+			q_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.q
+			r_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.r
 
-		#Update
-		Vcl.Update(ReferenceCommands)
+			# Update
+			Vcl.Update(ReferenceCommands)
+		# plotting
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pn_data, label="pn response")
+		ax.set_title("state: pn")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pn ")
+		ax.legend()
+		plt.show("pngraph.png")
 
-	plt.close("all")
-	fig, ax = plt.subplots()
-	ax.plot(t_data, pd_data, label="yaw response")
-	ax.plot(t_data, freq, label="sin(wt)")
-	ax.set_xlabel("time (s)")
-	ax.set_ylabel("angle (rad)")
-	ax.legend()
-	plt.savefig("3egraph.pdf")
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pe_data, label="pe response")
+		ax.set_title("state: pe")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pe ")
+		ax.legend()
+		plt.show("pegraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pd_data, label="pd response")
+		ax.set_title("state: pd")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pd ")
+		ax.legend()
+		plt.show("pdgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, u_data, label="u response")
+		ax.set_title("state: u")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("u ")
+		ax.legend()
+		plt.show("ugraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, v_data, label="v response")
+		ax.set_title("state: v")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("v ")
+		ax.legend()
+		plt.show("vgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, w_data, label="w response")
+		ax.set_title("state: w")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("w ")
+		ax.legend()
+		plt.saveshow("wgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, yaw_data, label="yaw response")
+		ax.set_title("state: yaw")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("yaw (rad) ")
+		ax.legend()
+		plt.show("yawgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pitch_data, label="pitch response")
+		ax.set_title("state: pitch")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pitch (rad) ")
+		ax.legend()
+		plt.show("pitchgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, roll_data, label="roll response")
+		ax.set_title("state: roll")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("roll (rad) ")
+		ax.legend()
+		plt.saveshow("roll.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, p_data, label="p response")
+		ax.set_title("state: p")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("p ")
+		ax.legend()
+		plt.show("pgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, q_data, label="q response")
+		ax.set_title("state: q")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("q ")
+		ax.legend()
+		plt.show("qgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, r_data, label="r response")
+		ax.set_title("state: r")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("r ")
+		ax.legend()
+		plt.show("rgraph.png")
+	Simulationest1()
+
+	def Simulationstest2():
+		# instance of VehicleClosedLoopControl
+		Vcl = VCLC.VehicleClosedLoopControl()
+
+		# setting dT
+		Vcl.dT = 0.001
+
+		# setting rudderControl source
+		Vcl.rudderControlSource = 'SIDESLIP'
+
+		# setting VehicleAerodynamicsModel
+		Vcl.VAmodel.InitialSpeed = 150  # Initial Speed
+		Vcl.VAmodel.InitialHeight = 100  # Initial Height
+		Vcl.VAmodel.WindModel.dT = 0.001  # WindModel time step
+		Vcl.VAmodel.WindModel.Va = 10  # WindModel airspeed
+		Vcl.VAmodel.WindModel.drydenParameters = VPC.DrydenLowAltitudeModerate  # Windmodel DrydenParameters
+		Vcl.VAmodel.vehicleDynamicsModel.dT = 0.001
+
+		# setting control gains
+		# lateral Gains
+		Vcl.controlGains = Inputs.controlInputs()
+		Vcl.controlGains.kp_roll = 3
+		Vcl.controlGains.kd_roll = 0.04
+		Vcl.controlGains.ki_roll = 0.001
+		Vcl.controlGains.kp_sideslip = 2
+		Vcl.controlGains.ki_sideslip = 2
+		Vcl.controlGains.kp_course = 5
+		Vcl.controlGains.ki_course = 2
+		# Longitudinal Gains
+		Vcl.controlGains.kp_pitch = -10
+		Vcl.controlGains.kd_pitch = -0.8
+		Vcl.controlGains.kp_altitude = 0.08
+		Vcl.controlGains.ki_altitude = 0.03
+		Vcl.controlGains.kp_SpeedfromThrottle = 2.0
+		Vcl.controlGains.ki_SpeedfromThrottle = 1.0
+		Vcl.controlGains.kp_SpeedfromElevator = -0.5
+		Vcl.controlGains.ki_SpeedfromElevator = -0.1
+
+		# setting trim Inputs
+		Vcl.trimInputs = Inputs.controlInputs()
+		Vcl.trimInputs.Throttle = 0.8
+		Vcl.trimInputs.Aileron = 3
+		Vcl.trimInputs.Elevator = 2
+		Vcl.trimInputs.Rudder = 3
+
+		# setting mode
+		Vcl.mode = Controls.AltitudeStates.CLIMBING
+
+		# graphing
+		# Time
+		T_tot = 20  # a total of 20 seconds for flight
+		n_step = int(T_tot / Vcl.dT)
+		t_data = [i * Vcl.dT for i in range(n_step)]
+
+		# lists for function
+		pd_data = [0 for i in range(n_step)]  # pd
+		pe_data = [0 for i in range(n_step)]  # pe
+		pn_data = [0 for i in range(n_step)]  # pd
+		u_data = [0 for i in range(n_step)]  # u
+		v_data = [0 for i in range(n_step)]  # v
+		w_data = [0 for i in range(n_step)]  # w
+		yaw_data = [0 for i in range(n_step)]  # yaw
+		pitch_data = [0 for i in range(n_step)]  # pitch
+		roll_data = [0 for i in range(n_step)]  # roll
+		p_data = [0 for i in range(n_step)]  # p
+		q_data = [0 for i in range(n_step)]  # q
+		r_data = [0 for i in range(n_step)]  # r
+
+		# Reference Commands
+		ReferenceCommands = Controls.referenceCommands()
+		ReferenceCommands.courseCommand = VPC.InitialYawAngle
+		ReferenceCommands.altitudeCommand = -VPC.InitialDownPosition
+		ReferenceCommands.airspeedCommand = VPC.InitialSpeed
+
+		# loop for many instances
+		for i in range(n_step):
+			# record our data
+			pd_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pd
+			pe_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pe
+			pn_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pn
+			u_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.u
+			v_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.v
+			w_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.w
+			yaw_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.yaw
+			pitch_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pitch
+			roll_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.roll
+			p_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.p
+			q_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.q
+			r_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.r
+
+			# Update
+			Vcl.Update(ReferenceCommands)
+		# plotting
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pn_data, label="pn response")
+		ax.set_title("state: pn")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pn ")
+		ax.legend()
+		plt.show("pngraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pe_data, label="pe response")
+		ax.set_title("state: pe")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pe ")
+		ax.legend()
+		plt.show("pegraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pd_data, label="pd response")
+		ax.set_title("state: pd")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pd ")
+		ax.legend()
+		plt.show("pdgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, u_data, label="u response")
+		ax.set_title("state: u")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("u ")
+		ax.legend()
+		plt.show("ugraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, v_data, label="v response")
+		ax.set_title("state: v")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("v ")
+		ax.legend()
+		plt.show("vgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, w_data, label="w response")
+		ax.set_title("state: w")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("w ")
+		ax.legend()
+		plt.saveshow("wgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, yaw_data, label="yaw response")
+		ax.set_title("state: yaw")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("yaw (rad) ")
+		ax.legend()
+		plt.show("yawgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pitch_data, label="pitch response")
+		ax.set_title("state: pitch")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pitch (rad) ")
+		ax.legend()
+		plt.show("pitchgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, roll_data, label="roll response")
+		ax.set_title("state: roll")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("roll (rad) ")
+		ax.legend()
+		plt.saveshow("roll.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, p_data, label="p response")
+		ax.set_title("state: p")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("p ")
+		ax.legend()
+		plt.show("pgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, q_data, label="q response")
+		ax.set_title("state: q")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("q ")
+		ax.legend()
+		plt.show("qgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, r_data, label="r response")
+		ax.set_title("state: r")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("r ")
+		ax.legend()
+		plt.show("rgraph.png")
+	Simulationstest2()
+
+	def Simulationtest3():
+		# instance of VehicleClosedLoopControl
+		Vcl = VCLC.VehicleClosedLoopControl()
+
+		# setting dT
+		Vcl.dT = 0.001
+
+		# setting rudderControl source
+		Vcl.rudderControlSource = 'SIDESLIP'
+
+		# setting VehicleAerodynamicsModel
+		Vcl.VAmodel.InitialSpeed = 50  # Initial Speed
+		Vcl.VAmodel.InitialHeight = 70  # Initial Height
+		Vcl.VAmodel.WindModel.dT = 0.001  # WindModel time step
+		Vcl.VAmodel.WindModel.Va = 50  # WindModel airspeed
+		Vcl.VAmodel.WindModel.drydenParameters = VPC.DrydenHighAltitudeLight  # Windmodel DrydenParameters
+		Vcl.VAmodel.vehicleDynamicsModel.dT = 0.001
+
+		# setting control gains
+		# lateral Gains
+		Vcl.controlGains = Inputs.controlInputs()
+		Vcl.controlGains.kp_roll = 3
+		Vcl.controlGains.kd_roll = 0.04
+		Vcl.controlGains.ki_roll = 0.001
+		Vcl.controlGains.kp_sideslip = 2
+		Vcl.controlGains.ki_sideslip = 2
+		Vcl.controlGains.kp_course = 5
+		Vcl.controlGains.ki_course = 2
+		# Longitudinal Gains
+		Vcl.controlGains.kp_pitch = -10
+		Vcl.controlGains.kd_pitch = -0.8
+		Vcl.controlGains.kp_altitude = 0.08
+		Vcl.controlGains.ki_altitude = 0.03
+		Vcl.controlGains.kp_SpeedfromThrottle = 2.0
+		Vcl.controlGains.ki_SpeedfromThrottle = 1.0
+		Vcl.controlGains.kp_SpeedfromElevator = -0.5
+		Vcl.controlGains.ki_SpeedfromElevator = -0.1
+
+		# setting trim Inputs
+		Vcl.trimInputs = Inputs.controlInputs()
+		Vcl.trimInputs.Throttle = 0.2
+		Vcl.trimInputs.Aileron = 10
+		Vcl.trimInputs.Elevator = 0
+		Vcl.trimInputs.Rudder = 0
+
+		# setting mode
+		Vcl.mode = Controls.AltitudeStates.DESCENDING
+
+		# graphing
+		# Time
+		T_tot = 20  # a total of 20 seconds for flight
+		n_step = int(T_tot / Vcl.dT)
+		t_data = [i * Vcl.dT for i in range(n_step)]
+
+		# lists for function
+		pd_data = [0 for i in range(n_step)]  # pd
+		pe_data = [0 for i in range(n_step)]  # pe
+		pn_data = [0 for i in range(n_step)]  # pd
+		u_data = [0 for i in range(n_step)]  # u
+		v_data = [0 for i in range(n_step)]  # v
+		w_data = [0 for i in range(n_step)]  # w
+		yaw_data = [0 for i in range(n_step)]  # yaw
+		pitch_data = [0 for i in range(n_step)]  # pitch
+		roll_data = [0 for i in range(n_step)]  # roll
+		p_data = [0 for i in range(n_step)]  # p
+		q_data = [0 for i in range(n_step)]  # q
+		r_data = [0 for i in range(n_step)]  # r
+
+		# Reference Commands
+		ReferenceCommands = Controls.referenceCommands()
+		ReferenceCommands.courseCommand = VPC.InitialYawAngle
+		ReferenceCommands.altitudeCommand = -VPC.InitialDownPosition
+		ReferenceCommands.airspeedCommand = VPC.InitialSpeed
+
+		# loop for many instances
+		for i in range(n_step):
+			# record our data
+			pd_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pd
+			pe_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pe
+			pn_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pn
+			u_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.u
+			v_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.v
+			w_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.w
+			yaw_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.yaw
+			pitch_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.pitch
+			roll_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.roll
+			p_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.p
+			q_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.q
+			r_data[i] = Vcl.VAmodel.vehicleDynamicsModel.state.r
+
+			# Update
+			Vcl.Update(ReferenceCommands)
+		# plotting
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pn_data, label="pn response")
+		ax.set_title("state: pn")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pn ")
+		ax.legend()
+		plt.show("pngraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pe_data, label="pe response")
+		ax.set_title("state: pe")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pe ")
+		ax.legend()
+		plt.show("pegraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pd_data, label="pd response")
+		ax.set_title("state: pd")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pd ")
+		ax.legend()
+		plt.show("pdgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, u_data, label="u response")
+		ax.set_title("state: u")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("u ")
+		ax.legend()
+		plt.show("ugraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, v_data, label="v response")
+		ax.set_title("state: v")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("v ")
+		ax.legend()
+		plt.show("vgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, w_data, label="w response")
+		ax.set_title("state: w")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("w ")
+		ax.legend()
+		plt.saveshow("wgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, yaw_data, label="yaw response")
+		ax.set_title("state: yaw")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("yaw (rad) ")
+		ax.legend()
+		plt.show("yawgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, pitch_data, label="pitch response")
+		ax.set_title("state: pitch")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("pitch (rad) ")
+		ax.legend()
+		plt.show("pitchgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, roll_data, label="roll response")
+		ax.set_title("state: roll")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("roll (rad) ")
+		ax.legend()
+		plt.saveshow("roll.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, p_data, label="p response")
+		ax.set_title("state: p")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("p ")
+		ax.legend()
+		plt.show("pgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, q_data, label="q response")
+		ax.set_title("state: q")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("q ")
+		ax.legend()
+		plt.show("qgraph.png")
+
+		plt.close("all")
+		fig, ax = plt.subplots()
+		ax.plot(t_data, r_data, label="r response")
+		ax.set_title("state: r")
+		ax.set_xlabel("time (s)")
+		ax.set_ylabel("r ")
+		ax.legend()
+		plt.show("rgraph.png")
+	Simulationtest3()
+
+Simulationtest()
 
 
 
