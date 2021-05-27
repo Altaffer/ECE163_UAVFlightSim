@@ -36,4 +36,5 @@ class Chapter7Simulate(Simulate.Simulate):
 	def reset(self):
 		self.time = 0
 		self.underlyingModel.reset()
+		self.sensorModel.reset()
 		self.takenData.clear()
