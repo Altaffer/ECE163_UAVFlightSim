@@ -7,7 +7,7 @@ import math
 testingAbs_tol = 1e-6
 
 class vehicleSensors:
-	def __init__(self):
+	def __init__(self,  gyro_x=0.0,  gyro_y=0.0,  gyro_z=0.0,  accel_x=0.0,  accel_y=0.0,  accel_z=0.0,  mag_x=0.0,  mag_y=0.0,  mag_z=0.0,  baro=0.0,  pitot=0.0,  gps_n=0.0,  gps_e=0.0,  gps_alt=0.0,  gps_sog=0.0,  gps_cog=0.0, ):
 		"""
 		Defines the typical sensor suite on the UAV. This includes a 3-axis accelerometer, a 3-axis gyro, and a 3-axis
 		magnetometer. A simple barometer (absolute pressure sensor) and a pitot tube (differential pressure sensor) are
@@ -15,26 +15,26 @@ class vehicleSensors:
 		ground (COG).
 		"""
 		# gyros
-		self.gyro_x = 0.0
-		self.gyro_y = 0.0
-		self.gyro_z = 0.0
+		self.gyro_x = gyro_x
+		self.gyro_y = gyro_y
+		self.gyro_z = gyro_z
 		# accelerometers
-		self.accel_x = 0.0
-		self.accel_y = 0.0
-		self.accel_z = 0.0
+		self.accel_x = accel_x
+		self.accel_y = accel_y
+		self.accel_z = accel_z
 		# magnetometers
-		self.mag_x = 0.0
-		self.mag_y = 0.0
-		self.mag_z = 0.0
+		self.mag_x = mag_x
+		self.mag_y = mag_y
+		self.mag_z = mag_z
 		# pressure sensors
-		self.baro = 0.0
-		self.pitot = 0.0
+		self.baro = baro
+		self.pitot = pitot
 		# gps
-		self.gps_n = 0.0
-		self.gps_e = 0.0
-		self.gps_alt = 0.0
-		self.gps_sog = 0.0
-		self.gps_cog = 0.0
+		self.gps_n = gps_n
+		self.gps_e = gps_e
+		self.gps_alt = gps_alt
+		self.gps_sog = gps_sog
+		self.gps_cog = gps_cog
 		return
 
 	def __repr__(self):
