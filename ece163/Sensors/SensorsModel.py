@@ -281,11 +281,11 @@ class SensorsModel():
         class States.vehicleState, current vehicle state
         """
         #Update true gyro in the x direction
-        gyro_x = state.p + random.gauss(0, self.sensorSigmas.gyro_x)
+        gyro_x = state.p
         # Update true gyro in the y direction
-        gyro_y = state.q + random.gauss(0, self.sensorSigmas.gyro_y)
+        gyro_y = state.q
         # Update true gyro in the z direction
-        gyro_z = state.r + random.gauss(0,self.sensorSigmas.gyro_z)
+        gyro_z = state.r
         return gyro_x, gyro_y, gyro_z
 
     def updatePressureSensorsTrue(self, state):
