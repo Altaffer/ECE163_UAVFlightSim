@@ -255,16 +255,13 @@ class SensorsModel():
         """
         # Update true accelerometer in the x direction
         accel_x = dot.u + (state.q * state.w) - (state.r * state.v) + \
-                  (VPC.g0 * math.sin(state.pitch)) + \
-                  random.gauss(0,self.sensorSigmas.accel_x)
+                  (VPC.g0 * math.sin(state.pitch))
         # Update true accelerometer in the y direction
         accel_y = dot.v + (state.r * state.u) - (state.p * state.w) - \
-                  (VPC.g0 * math.cos(state.pitch) * math.sin(state.roll)) + \
-                  random.gauss(0,self.sensorSigmas.accel_y)
+                  (VPC.g0 * math.cos(state.pitch) * math.sin(state.roll))
         # Update true accelerometer in the z direction
         accel_z = dot.w + (state.p * state.v) - (state.q * state.u) - \
-                  (VPC.g0 * math.cos(state.pitch) * math.cos(state.roll)) + \
-                  random.gauss(0,self.sensorSigmas.accel_z)
+                  (VPC.g0 * math.cos(state.pitch) * math.cos(state.roll))
         return accel_x, accel_y, accel_z
 
     def updateMagsTrue(self, state):
