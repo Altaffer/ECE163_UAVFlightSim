@@ -112,9 +112,9 @@ class GaussMarkovXYZ():
         internal values that holds until the next call of the function.
         """
         #calling update function for each axis as I previously call class in init
-        vX = self.x_axis.update(vXnoise)
-        vY = self.y_axis.update(vYnoise)
-        vZ = self.z_axis.update(vZnoise)
+        vX = self.x_axis.update(vnoise=vXnoise)
+        vY = self.y_axis.update(vnoise=vYnoise)
+        vZ = self.z_axis.update(vnoise=vZnoise)
         return vX, vY, vZ
 
 class SensorsModel():
@@ -145,12 +145,14 @@ class SensorsModel():
         #Gauss-Markov process noise standard deviation [m]
         self.etaGPSVertical = etaGPSVertical
         # initializing Gauss Markov XYZ for GPS
-        self.xyzgps = GaussMarkovXYZ(dT=VPC.dT, tauX=self.tauGPS, etaX=self.etaGPSHorizontal, tauY=None,
-                                     etaY=self.etaGPSHorizontal, tauZ=None, etaZ=self.etaGPSVertical)
+        self.gmgps = GaussMarkov(dT = VPC.dT, tau = self.tauGPS, eta = self.etaGPSHorizontal)
+        self.gmgps2 = GaussMarkov(dT = VPC.dT, tau = self.tauGPS, eta = self.etaGPSVertical)
         #Update rate for GPS measurements [Hz]
         self.gpsUpdateHz = gpsUpdateHz
         #update threshold
         self.threshold = (1/self.gpsUpdateHz) * (1/VPC.dT)
+        #update tick counter
+        self.counter = 0
         #for true measurements
         self.sensorsTrue = Sensors.vehicleSensors()
         #static biases associated with each measurement
@@ -166,6 +168,8 @@ class SensorsModel():
                          baroSigma = VSC.baro_sigma, pitotSigma = VSC.pitot_sigma,
                          gpsSigmaHorizontal = VSC.GPS_sigmaHorizontal, gpsSigmaVertical = VSC.GPS_sigmaVertical,
                          gpsSigmaSOG = VSC.GPS_sigmaSOG, gpsSigmaCOG = VSC.GPS_sigmaCOG)
+        #time step
+        self.dT = VPC.dT
 
         return
 
@@ -313,12 +317,15 @@ class SensorsModel():
         #pressure update
         self.sensorsTrue.baro, self.sensorsTrue.pitot = self.updatePressureSensorsTrue(state)
         #gps update
-        if self.gpsUpdateHz % self.threshold == 0:
+        if self.counter % self.threshold == 0:
             self.sensorsTrue.gps_n, self.sensorsTrue.gps_e, self.sensorsTrue.gps_alt, self.sensorsTrue.gps_SOG, \
             self.sensorsTrue.gps_COG = self.updateGPSTrue(state, dot)
         else:
-            self.sensorsTrue.gps_n, self.sensorsTrue.gps_e, self.sensorsTrue.gps_alt, self.sensorsTrue.gps_SOG, \
-            self.sensorsTrue.gps_COG = prevTrueSensors
+            self.sensorsTrue.gps_n = prevTrueSensors.gps_n
+            self.sensorsTrue.gps_e = prevTrueSensors.gps_e
+            self.sensorsTrue.gps_alt = prevTrueSensors.gps_alt
+            self.sensorsTrue.gps_SOG = prevTrueSensors.gps_sog
+            self.sensorsTrue.gps_COG = prevTrueSensors.gps_cog
 
         return self.sensorsTrue
 
@@ -332,7 +339,7 @@ class SensorsModel():
         should be copied from the noisySensors input to the output.
         """
         #gyro noise
-        vX, vY, vZ = GaussMarkovXYZ.update(noisySensors.gyro_x, noisySensors.gyro_y, noisySensors.gyro_z)
+        vX, vY, vZ = self.xyzgyro.update(noisySensors.gyro_x, noisySensors.gyro_y, noisySensors.gyro_z)
         self.sensorsNoisy.gyro_x = trueSensors.gyro_x + sensorBiases.gyro_x + random.gauss(0, sensorSigmas.gyro_x) + vX
         self.sensorsNoisy.gyro_y = trueSensors.gyro_y + sensorBiases.gyro_y + random.gauss(0, sensorSigmas.gyro_y) + vY
         self.sensorsNoisy.gyro_z = trueSensors.gyro_z + sensorBiases.gyro_z + random.gauss(0, sensorSigmas.gyro_x) + vZ
@@ -340,7 +347,7 @@ class SensorsModel():
         #accel noise
         self.sensorsNoisy.accel_x = trueSensors.accel_x + sensorBiases.accel_x + random.gauss(0, sensorSigmas.accel_x)
         self.sensorsNoisy.accel_y = trueSensors.accel_y + sensorBiases.accel_y + random.gauss(0, sensorSigmas.accel_y)
-        self.sensorsNoisy.accel_z =  trueSensors.accel_z + sensorBiases.accel_z + random.gauss(0, sensorSigmas.accel_z)
+        self.sensorsNoisy.accel_z = trueSensors.accel_z + sensorBiases.accel_z + random.gauss(0, sensorSigmas.accel_z)
 
         #mag noise
         self.sensorsNoisy.mag_x =  trueSensors.mag_x + sensorBiases.mag_x + random.gauss(0, sensorSigmas.mag_x)
@@ -352,27 +359,27 @@ class SensorsModel():
         self.sensorsNoisy.pitot = trueSensors.pitot + sensorBiases.pitot + random.gauss(0, sensorSigmas.pitot)
 
         #gps noise
-        if self.gpsUpdateHz % self.threshold == 0:
+        if self.counter % self.threshold == 0:
             self.sensorsNoisy.gps_n = trueSensors.gps_n + sensorBiases.gps_n + \
                                       ((VPC.InitialSpeed / trueSensors.gps_sog) *
                                        random.gauss(0, sensorSigmas.gps_n)) + \
-                                      GaussMarkov.update(noisySensors.gps_n)
+                                      self.gmgps.update(noisySensors.gps_n)
             self.sensorsNoisy.gps_e = trueSensors.gps_e + sensorBiases.gps_e + \
                                       ((VPC.InitialSpeed / trueSensors.gps_sog) *
                                        random.gauss(0, sensorSigmas.gps_e)) + \
-                                      GaussMarkov.update(noisySensors.gps_e)
+                                      self.gmgps.update(noisySensors.gps_e)
             self.sensorsNoisy.gps_alt = trueSensors.gps_alt + sensorBiases.gps_alt + \
                                         ((VPC.InitialSpeed / trueSensors.gps_sog) *
                                          random.gauss(0, sensorSigmas.gps_alt)) + \
-                                        GaussMarkov.update(noisySensors.gps_alt)
+                                        self.gmgps2.update(noisySensors.gps_alt)
             self.sensorsNoisy.gps_sog = trueSensors.gps_sog + sensorBiases.gps_sog + \
                                         ((VPC.InitialSpeed / trueSensors.gps_sog) *
                                          random.gauss(0, sensorSigmas.gps_sog)) + \
-                                        GaussMarkov.update(noisySensors.gps_sog)
+                                        self.gmgps.update(noisySensors.gps_sog)
             self.sensorsNoisy.gps_cog = trueSensors.gps_cog + sensorBiases.gps_cog + \
                                         ((VPC.InitialSpeed / trueSensors.gps_sog) *
                                          random.gauss(0, sensorSigmas.gps_cog)) + \
-                                        GaussMarkov.update(noisySensors.gps_cog)
+                                        self.gmgps.update(noisySensors.gps_cog)
         else:
             self.sensorsNoisy.gps_n = noisySensors.gps_n
             self.sensorsNoisy.gps_e = noisySensors.gps_e
@@ -392,6 +399,7 @@ class SensorsModel():
         self.AeroModel. Note that we are passing in a handle to the class for this so we don’t have to explicitly use
         getters from the VehicleAerodynamics model. Sensors states are updated internally within self.
         """
+        self.counter+=1
         UST = self.updateSensorsTrue(self.sensorsTrue, self.aeroModel.vehicleDynamicsModel.state,
                                self.aeroModel.vehicleDynamicsModel.dot)
         self.updateSensorsNoisy(UST, self.sensorsNoisy, self.sensorsBiases, self.sensorSigmas)
