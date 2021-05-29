@@ -167,7 +167,7 @@ class SensorsModel():
         self.initializeSigmas(gyroSigma = VSC.gyro_sigma, accelSigma = VSC.accel_sigma, magSigma = VSC.mag_sigma,
                          baroSigma = VSC.baro_sigma, pitotSigma = VSC.pitot_sigma,
                          gpsSigmaHorizontal = VSC.GPS_sigmaHorizontal, gpsSigmaVertical = VSC.GPS_sigmaVertical,
-                         gpsSigmaSOG = VSC.GPS_sigmaSOG, gpsSigmaCOG = VSC.GPS_sigmaCOG)
+                         gpsSigmasog = VSC.GPS_sigmaSOG, gpsSigmacog = VSC.GPS_sigmaCOG)
         #time step
         self.dT = VPC.dT
 
@@ -208,7 +208,7 @@ class SensorsModel():
     def initializeSigmas(self, gyroSigma = VSC.gyro_sigma, accelSigma = VSC.accel_sigma, magSigma = VSC.mag_sigma,
                          baroSigma = VSC.baro_sigma, pitotSigma = VSC.pitot_sigma,
                          gpsSigmaHorizontal = VSC.GPS_sigmaHorizontal, gpsSigmaVertical = VSC.GPS_sigmaVertical,
-                         gpsSigmaSOG = VSC.GPS_sigmaSOG, gpsSigmaCOG = VSC.GPS_sigmaCOG):
+                         gpsSigmasog = VSC.GPS_sigmaSOG, gpsSigmacog = VSC.GPS_sigmaCOG):
         """Function to gather all of the white noise standard deviations into a single vehicleSensor class object.
         These will be used as the input to generating the white noise added to each sensor when generating the noisy
         sensor data.
@@ -232,8 +232,8 @@ class SensorsModel():
         self.sensorSigmas.gps_n = gpsSigmaHorizontal
         self.sensorSigmas.gps_e = gpsSigmaHorizontal
         self.sensorSigmas.gps_alt = gpsSigmaVertical
-        self.sensorSigmas.gps_sog = gpsSigmaSOG
-        self.sensorSigmas.gps_cog = gpsSigmaCOG
+        self.sensorSigmas.gps_sog = gpsSigmasog
+        self.sensorSigmas.gps_cog = gpsSigmacog
 
         return self.sensorSigmas
 
@@ -247,12 +247,12 @@ class SensorsModel():
         gps_e = state.pe
         # gps_alt in [Altitude - m]
         gps_alt = -state.pd
-        # gps_SOG in [Speed over ground, m/s]
-        gps_SOG = math.sqrt((dot.pn**2) + (dot.pe**2))
-        # gps_COG in [Course over ground, rad]
-        gps_COG = math.atan2(dot.pe, dot.pn)
+        # gps_sog in [Speed over ground, m/s]
+        gps_sog = math.sqrt((dot.pn**2) + (dot.pe**2))
+        # gps_cog in [Course over ground, rad]
+        gps_cog = math.atan2(dot.pe, dot.pn)
 
-        return gps_n, gps_e, gps_alt, gps_SOG, gps_COG
+        return gps_n, gps_e, gps_alt, gps_sog, gps_cog
 
     def updateAccelsTrue(self, state, dot):
         """Function to update the accelerometer sensor. Will be called within the updateSensors functions.
@@ -308,26 +308,27 @@ class SensorsModel():
         an update rate specified in the VehicleSensorConstants file. For the GPS update, the previous value is returned
         until a new update occurs. Previous value is contained within prevTrueSensors.
         """
+        SensorsTrue = Sensors.vehicleSensors()
         #gyros update
-        self.sensorsTrue.gyro_x, self.sensorsTrue.gyro_y, self.sensorsTrue.gyro_z = self.updateGyrosTrue(state)
+        SensorsTrue.gyro_x, SensorsTrue.gyro_y, SensorsTrue.gyro_z = self.updateGyrosTrue(state)
         #accel update
-        self.sensorsTrue.accel_x, self.sensorsTrue.accel_y, self.sensorsTrue.accel_z = self.updateAccelsTrue(state, dot)
+        SensorsTrue.accel_x, SensorsTrue.accel_y, SensorsTrue.accel_z = self.updateAccelsTrue(state, dot)
         #mag update
-        self.sensorsTrue.mag_x, self.sensorsTrue.mag_y, self.sensorsTrue.mag_z = self.updateMagsTrue(state)
+        SensorsTrue.mag_x, SensorsTrue.mag_y, SensorsTrue.mag_z = self.updateMagsTrue(state)
         #pressure update
-        self.sensorsTrue.baro, self.sensorsTrue.pitot = self.updatePressureSensorsTrue(state)
+        SensorsTrue.baro, SensorsTrue.pitot = self.updatePressureSensorsTrue(state)
         #gps update
         if self.counter % self.threshold == 0:
-            self.sensorsTrue.gps_n, self.sensorsTrue.gps_e, self.sensorsTrue.gps_alt, self.sensorsTrue.gps_SOG, \
-            self.sensorsTrue.gps_COG = self.updateGPSTrue(state, dot)
+            SensorsTrue.gps_n, SensorsTrue.gps_e, SensorsTrue.gps_alt, SensorsTrue.gps_sog, \
+            SensorsTrue.gps_cog = self.updateGPSTrue(state, dot)
         else:
-            self.sensorsTrue.gps_n = prevTrueSensors.gps_n
-            self.sensorsTrue.gps_e = prevTrueSensors.gps_e
-            self.sensorsTrue.gps_alt = prevTrueSensors.gps_alt
-            self.sensorsTrue.gps_SOG = prevTrueSensors.gps_sog
-            self.sensorsTrue.gps_COG = prevTrueSensors.gps_cog
+            SensorsTrue.gps_n = prevTrueSensors.gps_n
+            SensorsTrue.gps_e = prevTrueSensors.gps_e
+            SensorsTrue.gps_alt = prevTrueSensors.gps_alt
+            SensorsTrue.gps_sog = prevTrueSensors.gps_sog
+            SensorsTrue.gps_cog = prevTrueSensors.gps_cog
 
-        return self.sensorsTrue
+        return SensorsTrue
 
     def updateSensorsNoisy(self, trueSensors = Sensors.vehicleSensors(), noisySensors = Sensors.vehicleSensors(),
                            sensorBiases = Sensors.vehicleSensors(), sensorSigmas = Sensors.vehicleSensors()):
@@ -338,61 +339,49 @@ class SensorsModel():
         The GPS COG must be limited to within +/- PI. If no GPS update has occurred, then the values for the GPS sensors
         should be copied from the noisySensors input to the output.
         """
+        SensorsNoisy = Sensors.vehicleSensors()
         #gyro noise
         vX, vY, vZ = self.xyzgyro.update(noisySensors.gyro_x, noisySensors.gyro_y, noisySensors.gyro_z)
-        self.sensorsNoisy.gyro_x = trueSensors.gyro_x + sensorBiases.gyro_x + random.gauss(0, sensorSigmas.gyro_x) + vX
-        self.sensorsNoisy.gyro_y = trueSensors.gyro_y + sensorBiases.gyro_y + random.gauss(0, sensorSigmas.gyro_y) + vY
-        self.sensorsNoisy.gyro_z = trueSensors.gyro_z + sensorBiases.gyro_z + random.gauss(0, sensorSigmas.gyro_x) + vZ
+        SensorsNoisy.gyro_x = trueSensors.gyro_x + sensorBiases.gyro_x + random.gauss(0, sensorSigmas.gyro_x) + vX
+        SensorsNoisy.gyro_y = trueSensors.gyro_y + sensorBiases.gyro_y + random.gauss(0, sensorSigmas.gyro_y) + vY
+        SensorsNoisy.gyro_z = trueSensors.gyro_z + sensorBiases.gyro_z + random.gauss(0, sensorSigmas.gyro_x) + vZ
 
         #accel noise
-        self.sensorsNoisy.accel_x = trueSensors.accel_x + sensorBiases.accel_x + random.gauss(0, sensorSigmas.accel_x)
-        self.sensorsNoisy.accel_y = trueSensors.accel_y + sensorBiases.accel_y + random.gauss(0, sensorSigmas.accel_y)
-        self.sensorsNoisy.accel_z = trueSensors.accel_z + sensorBiases.accel_z + random.gauss(0, sensorSigmas.accel_z)
+        SensorsNoisy.accel_x = trueSensors.accel_x + sensorBiases.accel_x + random.gauss(0, sensorSigmas.accel_x)
+        SensorsNoisy.accel_y = trueSensors.accel_y + sensorBiases.accel_y + random.gauss(0, sensorSigmas.accel_y)
+        SensorsNoisy.accel_z = trueSensors.accel_z + sensorBiases.accel_z + random.gauss(0, sensorSigmas.accel_z)
 
         #mag noise
-        self.sensorsNoisy.mag_x =  trueSensors.mag_x + sensorBiases.mag_x + random.gauss(0, sensorSigmas.mag_x)
-        self.sensorsNoisy.mag_y = trueSensors.mag_y + sensorBiases.mag_y + random.gauss(0, sensorSigmas.mag_y)
-        self.sensorsNoisy.mag_z = trueSensors.mag_z + sensorBiases.mag_z + random.gauss(0, sensorSigmas.mag_z)
+        SensorsNoisy.mag_x =  trueSensors.mag_x + sensorBiases.mag_x + random.gauss(0, sensorSigmas.mag_x)
+        SensorsNoisy.mag_y = trueSensors.mag_y + sensorBiases.mag_y + random.gauss(0, sensorSigmas.mag_y)
+        SensorsNoisy.mag_z = trueSensors.mag_z + sensorBiases.mag_z + random.gauss(0, sensorSigmas.mag_z)
 
         #pressure noise
-        self.sensorsNoisy.baro = trueSensors.baro + sensorBiases.baro + random.gauss(0, sensorSigmas.baro)
-        self.sensorsNoisy.pitot = trueSensors.pitot + sensorBiases.pitot + random.gauss(0, sensorSigmas.pitot)
+        SensorsNoisy.baro = trueSensors.baro + sensorBiases.baro + random.gauss(0, sensorSigmas.baro)
+        SensorsNoisy.pitot = trueSensors.pitot + sensorBiases.pitot + random.gauss(0, sensorSigmas.pitot)
 
         #gps noise
         if self.counter % self.threshold == 0:
-            self.sensorsNoisy.gps_n = trueSensors.gps_n + sensorBiases.gps_n + \
-                                      ((VPC.InitialSpeed / trueSensors.gps_sog) *
-                                       random.gauss(0, sensorSigmas.gps_n)) + \
-                                      self.gmgps.update(noisySensors.gps_n)
-            self.sensorsNoisy.gps_e = trueSensors.gps_e + sensorBiases.gps_e + \
-                                      ((VPC.InitialSpeed / trueSensors.gps_sog) *
-                                       random.gauss(0, sensorSigmas.gps_e)) + \
-                                      self.gmgps.update(noisySensors.gps_e)
-            self.sensorsNoisy.gps_alt = trueSensors.gps_alt + sensorBiases.gps_alt + \
-                                        ((VPC.InitialSpeed / trueSensors.gps_sog) *
-                                         random.gauss(0, sensorSigmas.gps_alt)) + \
-                                        self.gmgps2.update(noisySensors.gps_alt)
-            self.sensorsNoisy.gps_sog = trueSensors.gps_sog + sensorBiases.gps_sog + \
-                                        ((VPC.InitialSpeed / trueSensors.gps_sog) *
-                                         random.gauss(0, sensorSigmas.gps_sog)) + \
-                                        self.gmgps.update(noisySensors.gps_sog)
-            self.sensorsNoisy.gps_cog = trueSensors.gps_cog + sensorBiases.gps_cog + \
-                                        ((VPC.InitialSpeed / trueSensors.gps_sog) *
-                                         random.gauss(0, sensorSigmas.gps_cog)) + \
-                                        self.gmgps.update(noisySensors.gps_cog)
+            SensorsNoisy.gps_n = trueSensors.gps_n + sensorBiases.gps_n + self.gmgps.update()
+            SensorsNoisy.gps_e = trueSensors.gps_e + sensorBiases.gps_e + self.gmgps.update()
+            SensorsNoisy.gps_alt = trueSensors.gps_alt + sensorBiases.gps_alt + self.gmgps2.update()
+            SensorsNoisy.gps_sog = trueSensors.gps_sog + sensorBiases.gps_sog + self.gmgps.update()
+            SensorsNoisy.gps_cog = trueSensors.gps_cog + sensorBiases.gps_cog + \
+                                   random.gauss(0, (VPC.InitialSpeed / trueSensors.gps_sog) * sensorSigmas.gps_cog) + \
+                                   self.gmgps.update()
         else:
-            self.sensorsNoisy.gps_n = noisySensors.gps_n
-            self.sensorsNoisy.gps_e = noisySensors.gps_e
-            self.sensorsNoisy.gps_alt = noisySensors.gps_alt
-            self.sensorsNoisy.gps_sog = noisySensors.gps_sog
-            self.sensorsNoisy.gps_cog = noisySensors.gps_cog
+            SensorsNoisy.gps_n = noisySensors.gps_n
+            SensorsNoisy.gps_e = noisySensors.gps_e
+            SensorsNoisy.gps_alt = noisySensors.gps_alt
+            SensorsNoisy.gps_sog = noisySensors.gps_sog
+            SensorsNoisy.gps_cog = noisySensors.gps_cog
 
-        if self.sensorsNoisy.gps_cog >= math.pi:
-            self.sensorsNoisy.gps_cog += (2 * math.pi)
-        if self.sensorsNoisy.gps_cog <= -math.pi:
-            self.sensorsNoisy.gps_cog -= (2 * math.pi)
+        if SensorsNoisy.gps_cog >= math.pi:
+            SensorsNoisy.gps_cog += (2 * math.pi)
+        if SensorsNoisy.gps_cog <= -math.pi:
+            SensorsNoisy.gps_cog -= (2 * math.pi)
 
-        return self.sensorsNoisy
+        return SensorsNoisy
 
     def update(self):
         """Wrapper function to update the Sensors (both true and noisy) using the state and dot held within the
@@ -400,9 +389,9 @@ class SensorsModel():
         getters from the VehicleAerodynamics model. Sensors states are updated internally within self.
         """
         self.counter+=1
-        UST = self.updateSensorsTrue(self.sensorsTrue, self.aeroModel.vehicleDynamicsModel.state,
+        self.sensorsTrue = self.updateSensorsTrue(self.sensorsTrue, self.aeroModel.vehicleDynamicsModel.state,
                                self.aeroModel.vehicleDynamicsModel.dot)
-        self.updateSensorsNoisy(UST, self.sensorsNoisy, self.sensorsBiases, self.sensorSigmas)
+        self.updateSensorsNoisy(self.sensorsTrue, self.sensorsNoisy, self.sensorsBiases, self.sensorSigmas)
         return
 
     def getSensorsTrue(self):
@@ -453,5 +442,5 @@ class SensorsModel():
         self.initializeSigmas(gyroSigma=VSC.gyro_sigma, accelSigma=VSC.accel_sigma, magSigma=VSC.mag_sigma,
                               baroSigma=VSC.baro_sigma, pitotSigma=VSC.pitot_sigma,
                               gpsSigmaHorizontal=VSC.GPS_sigmaHorizontal, gpsSigmaVertical=VSC.GPS_sigmaVertical,
-                              gpsSigmaSOG=VSC.GPS_sigmaSOG, gpsSigmaCOG=VSC.GPS_sigmaCOG)
+                              gpsSigmasog=VSC.GPS_sigmaSOG, gpsSigmacog=VSC.GPS_sigmaCOG)
         return
